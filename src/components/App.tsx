@@ -81,7 +81,7 @@ const App = () => {
         {/* View Switcher */}
         <div className="border-b">
           <div className="container py-2">
-            <Tabs value={activeView} onValueChange={setActiveView} className="w-[300px]">
+            <Tabs defaultValue={activeView} onValueChange={setActiveView} className="w-[300px]">
               <TabsList>
                 <TabsTrigger value="list" className="flex gap-2 items-center">
                   <List className="h-4 w-4" />
@@ -92,20 +92,22 @@ const App = () => {
                   <span>Calendar</span>
                 </TabsTrigger>
               </TabsList>
+            
+              {/* Views Content */}
+              <div className="flex-1 overflow-hidden mt-4">
+                <TabsContent value="list">
+                  <TaskList />
+                </TabsContent>
+                <TabsContent value="calendar">
+                  <CalendarView
+                    tasks={tasks}
+                    onTaskCreate={handleTaskCreate}
+                    onTaskUpdate={handleTaskUpdate}
+                  />
+                </TabsContent>
+              </div>
             </Tabs>
           </div>
-        </div>
-        
-        {/* Views Content */}
-        <div className="flex-1 overflow-hidden">
-          {activeView === "list" && <TaskList />}
-          {activeView === "calendar" && (
-            <CalendarView
-              tasks={tasks}
-              onTaskCreate={handleTaskCreate}
-              onTaskUpdate={handleTaskUpdate}
-            />
-          )}
         </div>
       </div>
     </MainLayout>
