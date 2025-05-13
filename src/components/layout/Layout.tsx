@@ -1,5 +1,5 @@
 
-import { useState, ReactNode } from "react";
+import { useState, useEffect, ReactNode } from "react";
 import Header from "./Header";
 import Footer from "./Footer";
 import Sidebar from "./Sidebar";
@@ -13,6 +13,11 @@ interface LayoutProps {
 const Layout = ({ children, showSidebar = true }: LayoutProps) => {
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
+
+  // Update sidebar state when screen size changes
+  useEffect(() => {
+    setSidebarOpen(!isMobile);
+  }, [isMobile]);
 
   return (
     <div className="min-h-screen bg-dincharya-background pattern-bg flex flex-col">
@@ -42,8 +47,8 @@ const Layout = ({ children, showSidebar = true }: LayoutProps) => {
         )}
         
         {/* Main content */}
-        <main className={`flex-1 flex flex-col ${showSidebar ? "lg:ml-0" : ""} pt-16`}>
-          <div className="container mx-auto px-4 py-6 flex-1">
+        <main className="flex-1 flex flex-col pt-16 transition-all duration-300">
+          <div className="container mx-auto px-4 py-6 flex-1 max-w-7xl">
             {children}
           </div>
         </main>

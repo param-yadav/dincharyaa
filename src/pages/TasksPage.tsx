@@ -76,11 +76,11 @@ const TasksPage = () => {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-dincharya-text mb-6">Task Management</h1>
+      <h1 className="text-3xl font-bold text-dincharya-text dark:text-white mb-6">Task Management</h1>
       
       <div className="bg-white dark:bg-dincharya-text/90 rounded-lg shadow-md mb-6 overflow-hidden">
-        <div className="border-b border-dincharya-muted/20 p-4">
-          <Tabs defaultValue={activeView} onValueChange={setActiveView} className="w-[300px]">
+        <Tabs defaultValue={activeView} onValueChange={setActiveView}>
+          <div className="border-b border-dincharya-muted/20 p-4">
             <TabsList>
               <TabsTrigger value="list" className="flex gap-2 items-center">
                 <List className="h-4 w-4" />
@@ -91,11 +91,9 @@ const TasksPage = () => {
                 <span>Calendar</span>
               </TabsTrigger>
             </TabsList>
-          </Tabs>
-        </div>
-        
-        <div className="min-h-[600px]">
-          <Tabs defaultValue={activeView} value={activeView} className="w-full">
+          </div>
+          
+          <div className="min-h-[600px]">
             <TabsContent value="list" className="m-0 p-0">
               <TaskList />
             </TabsContent>
@@ -106,8 +104,8 @@ const TasksPage = () => {
                 onTaskUpdate={handleTaskUpdate}
               />
             </TabsContent>
-          </Tabs>
-        </div>
+          </div>
+        </Tabs>
       </div>
     </div>
   );
