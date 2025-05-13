@@ -1,73 +1,98 @@
-# Welcome to your Lovable project
 
-## Project info
+# Dincharya - Daily Task Management
 
-**URL**: https://lovable.dev/projects/397bb586-9351-4bf3-acbf-8b423c54f03d
+![Dincharya Logo](/lovable-uploads/7b9e64ad-467b-4f8e-b543-70e78e2ceb8a.png)
 
-## How can I edit this code?
+Dincharya is a beautiful task management application inspired by traditional Indian daily routines, helping users organize their time effectively and boost productivity.
 
-There are several ways of editing your application.
+## Features
 
-**Use Lovable**
+- **Task Management**: Create, organize, and prioritize your daily tasks
+- **Calendar View**: Visualize your tasks in an intuitive calendar interface
+- **Time Tracking**: Monitor how you spend your time (coming soon)
+- **Task Reminders**: Never miss important deadlines (coming soon)
+- **Team Collaboration**: Share tasks with your team (coming soon)
+- **Beautiful UI**: Inspired by Madhubani art and traditional Indian design
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/397bb586-9351-4bf3-acbf-8b423c54f03d) and start prompting.
+## Getting Started
 
-Changes made via Lovable will be committed automatically to this repo.
+### Installation
 
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
+```bash
+# Clone the repository
 git clone <YOUR_GIT_URL>
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Navigate to project directory
+cd dincharya
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Install dependencies
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start the development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### Usage
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+1. Open your browser and navigate to `http://localhost:5173`
+2. Explore the different features of the application:
+   - View and manage tasks in the Tasks page
+   - Switch between list and calendar views
+   - Create new tasks using the task form
 
-**Use GitHub Codespaces**
+## Project Structure
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```
+src/
+├── components/           # Reusable components
+│   ├── home/             # Homepage-specific components
+│   ├── layout/           # Layout components (Header, Footer, Sidebar)
+│   ├── tasks/            # Task-related components
+│   └── ui/               # UI components from shadcn
+├── constants/            # Application constants
+├── hooks/                # Custom React hooks
+├── lib/                  # Utility functions and libraries
+├── pages/                # Page components
+└── integrations/         # External integrations (e.g., Supabase)
+```
 
-## What technologies are used for this project?
+## Tech Stack
 
-This project is built with:
+- **Frontend**: React, TypeScript, Vite
+- **Styling**: Tailwind CSS
+- **UI Components**: Shadcn/ui
+- **State Management**: React Context API, React Query
+- **Routing**: React Router
+- **Backend**: Supabase (for future integration)
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Development
 
-## How can I deploy this project?
+See [DEVELOPMENT.md](./DEVELOPMENT.md) for detailed development guidelines, coding standards, and project roadmap.
 
-Simply open [Lovable](https://lovable.dev/projects/397bb586-9351-4bf3-acbf-8b423c54f03d) and click on Share -> Publish.
+## Contributing
 
-## Can I connect a custom domain to my Lovable project?
+We welcome contributions to Dincharya! Please follow these steps:
 
-Yes, you can!
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## License
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments
+
+- Design inspiration from traditional Madhubani art
+- Icons from Lucide React
+- UI components from Shadcn/ui
+
+## Contact
+
+For any questions or feedback, please reach out to support@dincharya.com or open an issue on GitHub.
+
+---
+
+**URL**: https://lovable.dev/projects/397bb586-9351-4bf3-acbf-8b423c54f03d
