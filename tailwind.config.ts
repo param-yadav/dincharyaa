@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,22 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Madhubani inspired colors
+				madhubani: {
+					red: '#E83A3A',
+					blue: '#2F4F88',
+					yellow: '#FFCA28',
+					green: '#4CAF50',
+					orange: '#FF9800',
+					brown: '#8D6E63',
+					black: '#212121',
+					white: '#FFFFFF',
+				},
+				priority: {
+					low: '#4CAF50',
+					medium: '#FF9800',
+					high: '#E83A3A',
 				}
 			},
 			borderRadius: {
@@ -84,11 +101,23 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'border-dance': {
+					'0%, 100%': {
+						backgroundPosition: '0% 50%'
+					},
+					'50%': {
+						backgroundPosition: '100% 50%'
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'border-dance': 'border-dance 3s ease infinite'
+			},
+			backgroundImage: {
+				'madhubani-pattern': "url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0wIDBoNDB2NDBoLTQweiIvPjxwYXRoIGQ9Ik0xMCAxMGMwLTIuNzYgMi4yNC01IDUtNXM1IDIuMjQgNSA1LTIuMjQgNS01IDUtNS0yLjI0LTUtNXptMTUgMTBjMC0yLjc2IDIuMjQtNSA1LTVzNSAyLjI0IDUgNS0yLjI0IDUtNSA1LTUtMi4yNC01LTV6bS0xNSAxMGMwLTIuNzYgMi4yNC01IDUtNXM1IDIuMjQgNSA1LTIuMjQgNS01IDUtNS0yLjI0LTUtNXoiIHN0cm9rZT0icmdiYSgwLDAsMCwwLjEpIiBzdHJva2Utd2lkdGg9IjEuNSIvPjwvZz48L3N2Zz4=')"
 			}
 		}
 	},
