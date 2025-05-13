@@ -96,7 +96,7 @@ const TasksPage = () => {
         
         <div className="min-h-[600px]">
           <TabsContent value="list" className="m-0 p-0">
-            <TaskList tasks={tasks} onTaskUpdate={handleTaskUpdate} />
+            <TaskList />
           </TabsContent>
           <TabsContent value="calendar" className="m-0 p-0 h-full">
             <CalendarView

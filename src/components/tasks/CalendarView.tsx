@@ -18,7 +18,7 @@ import {
 import { cn } from "@/lib/utils";
 import { format, isSameDay } from "date-fns";
 import { TaskProps } from "./TaskCard";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon } from "lucide-react";
 import TaskForm from "./TaskForm";
 import TaskCard from "./TaskCard";
 
@@ -172,7 +172,7 @@ const CalendarView = ({
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-center p-6">
                 <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-4">
-                  <Calendar className="h-6 w-6 text-muted-foreground" />
+                  <CalendarIcon className="h-6 w-6 text-muted-foreground" />
                 </div>
                 <h4 className="text-lg font-medium mb-1">No tasks scheduled</h4>
                 <p className="text-muted-foreground text-sm mb-4">
