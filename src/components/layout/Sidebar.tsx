@@ -8,7 +8,7 @@ import {
   Users, 
   Clock, 
   Timer, 
-  Stopwatch, 
+  Watch, // Changed Stopwatch to Watch since Stopwatch isn't available
   FileText,
   FileChartColumn
 } from "lucide-react";
@@ -47,7 +47,7 @@ const Sidebar = () => {
     { id: "team", label: "Team", icon: Users },
     { id: "notes", label: "Notes", icon: FileText },
     { id: "timer", label: "Timer", icon: Timer },
-    { id: "stopwatch", label: "Stopwatch", icon: Stopwatch },
+    { id: "stopwatch", label: "Stopwatch", icon: Watch }, // Changed Stopwatch to Watch
     { id: "analysis", label: "Analysis", icon: FileChartColumn }
   ];
 
