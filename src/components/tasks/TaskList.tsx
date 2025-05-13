@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import TaskCard, { TaskProps } from "./TaskCard";
+import TaskCard from "./TaskCard";
 import TaskForm from "./TaskForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,70 +11,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, SlidersHorizontal } from "lucide-react";
-
-// Sample tasks data
-const initialTasks: TaskProps[] = [
-  {
-    id: "task1",
-    title: "Complete project proposal",
-    description: "Finalize the Q3 marketing strategy proposal for client review",
-    dueDate: new Date(2023, 5, 15, 14, 0), // June 15, 2023, 2:00 PM
-    priority: "high",
-    category: "Work",
-    assignedTo: "Me",
-  },
-  {
-    id: "task2",
-    title: "Weekly team meeting",
-    description: "Discuss project progress and address any blockers",
-    dueDate: new Date(2023, 5, 10, 10, 0), // June 10, 2023, 10:00 AM
-    priority: "medium",
-    category: "Work",
-    assignedTo: "Sarah",
-  },
-  {
-    id: "task3",
-    title: "Research new tools",
-    description: "Evaluate project management tools for team efficiency",
-    dueDate: new Date(2023, 5, 20, 17, 0), // June 20, 2023, 5:00 PM
-    priority: "low",
-    category: "Work",
-  },
-  {
-    id: "task4",
-    title: "Doctor's appointment",
-    description: "Annual checkup at City Health Clinic",
-    dueDate: new Date(2023, 5, 12, 9, 30), // June 12, 2023, 9:30 AM
-    priority: "medium",
-    category: "Health",
-    assignedTo: "Me",
-  },
-  {
-    id: "task5",
-    title: "Grocery shopping",
-    description: "Pick up items for dinner party",
-    dueDate: new Date(2023, 5, 8, 18, 0), // June 8, 2023, 6:00 PM
-    priority: "low",
-    category: "Errands",
-  },
-  {
-    id: "task6",
-    title: "Update website content",
-    description: "Refresh homepage and add new product descriptions",
-    dueDate: new Date(2023, 5, 18, 12, 0), // June 18, 2023, 12:00 PM
-    priority: "high",
-    category: "Work",
-    assignedTo: "Michael",
-  },
-];
+import { Search, SlidersHorizontal, Loader2 } from "lucide-react";
+import { useTasks, Task } from "@/hooks/use-tasks";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const TaskList = () => {
-  const [tasks, setTasks] = useState<TaskProps[]>(initialTasks);
+  const { tasks, loading, createTask, updateTask, deleteTask, togglePinTask, toggleCompleteTask } = useTasks();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterPriority, setFilterPriority] = useState<string>("all");
   const [filterCategory, setFilterCategory] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<string>("dueDate");
+  const [sortBy, setSortBy] = useState<string>("start_time");
 
   // Filter tasks based on search query and filters
   const filteredTasks = tasks.filter((task) => {
@@ -94,28 +40,57 @@ const TaskList = () => {
   // Sort tasks
   const sortedTasks = [...filteredTasks].sort((a, b) => {
     switch (sortBy) {
-      case "dueDate":
-        return a.dueDate.getTime() - b.dueDate.getTime();
+      case "start_time":
+        return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
       case "priority":
         const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
         return priorityOrder[a.priority] - priorityOrder[b.priority];
       case "title":
         return a.title.localeCompare(b.title);
+      case "pinned":
+        return (b.is_pinned ? 1 : 0) - (a.is_pinned ? 1 : 0);
       default:
         return 0;
     }
   });
 
-  const handleTaskCreate = (newTask: TaskProps) => {
-    setTasks([...tasks, newTask]);
+  // Handle task create
+  const handleTaskCreate = async (newTask: Omit<Task, "id" | "user_id" | "created_at" | "updated_at">) => {
+    await createTask(newTask);
   };
 
-  const handleTaskUpdate = (updatedTask: TaskProps) => {
-    setTasks(tasks.map(task => task.id === updatedTask.id ? updatedTask : task));
+  // Handle task update
+  const handleTaskUpdate = async (updatedTask: Task) => {
+    const { id, ...rest } = updatedTask;
+    await updateTask(id, rest);
+  };
+
+  // Handle task delete
+  const handleTaskDelete = async (id: string) => {
+    await deleteTask(id);
+  };
+
+  // Handle toggle complete
+  const handleToggleComplete = async (id: string, currentStatus: boolean) => {
+    await toggleCompleteTask(id, currentStatus);
+  };
+
+  // Handle toggle pin
+  const handleTogglePin = async (id: string, currentStatus: boolean) => {
+    await togglePinTask(id, currentStatus);
   };
 
   // Extract all unique categories from tasks
   const categories = Array.from(new Set(tasks.map(task => task.category)));
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-12">
+        <Loader2 className="h-12 w-12 text-dincharya-primary animate-spin mb-4" />
+        <p className="text-muted-foreground">Loading your tasks...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -167,9 +142,10 @@ const TaskList = () => {
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="dueDate">Due Date</SelectItem>
+              <SelectItem value="start_time">Start Time</SelectItem>
               <SelectItem value="priority">Priority</SelectItem>
               <SelectItem value="title">Title</SelectItem>
+              <SelectItem value="pinned">Pinned</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -179,21 +155,40 @@ const TaskList = () => {
         {sortedTasks.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {sortedTasks.map((task) => (
-              <TaskCard key={task.id} task={task} onUpdate={handleTaskUpdate} />
+              <TaskCard 
+                key={task.id} 
+                task={task} 
+                onUpdate={handleTaskUpdate}
+                onDelete={handleTaskDelete}
+                onToggleComplete={handleToggleComplete}
+                onTogglePin={handleTogglePin}
+              />
             ))}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-center p-8">
-            <div className="rounded-full bg-muted p-6 mb-4">
-              <Search className="h-10 w-10 text-muted-foreground" />
-            </div>
-            <h3 className="text-2xl font-medium mb-1">No tasks found</h3>
-            <p className="text-muted-foreground mb-4">
-              {searchQuery || filterPriority !== "all" || filterCategory !== "all"
-                ? "Try adjusting your filters or search query"
-                : "Get started by adding your first task"}
-            </p>
-            <TaskForm onTaskCreate={handleTaskCreate} />
+            {tasks.length > 0 ? (
+              <div>
+                <div className="rounded-full bg-muted p-6 mb-4">
+                  <Search className="h-10 w-10 text-muted-foreground" />
+                </div>
+                <h3 className="text-2xl font-medium mb-1">No tasks found</h3>
+                <p className="text-muted-foreground mb-4">
+                  Try adjusting your filters or search query
+                </p>
+              </div>
+            ) : (
+              <div>
+                <div className="rounded-full bg-muted p-6 mb-4">
+                  <Calendar className="h-10 w-10 text-muted-foreground" />
+                </div>
+                <h3 className="text-2xl font-medium mb-1">No tasks yet</h3>
+                <p className="text-muted-foreground mb-4">
+                  Get started by adding your first task
+                </p>
+                <TaskForm onTaskCreate={handleTaskCreate} />
+              </div>
+            )}
           </div>
         )}
       </div>

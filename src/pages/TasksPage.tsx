@@ -2,76 +2,21 @@
 import { useState } from "react";
 import TaskList from "@/components/tasks/TaskList";
 import CalendarView from "@/components/tasks/CalendarView";
-import { TaskProps } from "@/components/tasks/TaskCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar, List } from "lucide-react";
-
-// Sample tasks data
-const initialTasks: TaskProps[] = [
-  {
-    id: "task1",
-    title: "Complete project proposal",
-    description: "Finalize the Q3 marketing strategy proposal for client review",
-    dueDate: new Date(2023, 5, 15, 14, 0), // June 15, 2023, 2:00 PM
-    priority: "high",
-    category: "Work",
-    assignedTo: "Me",
-  },
-  {
-    id: "task2",
-    title: "Weekly team meeting",
-    description: "Discuss project progress and address any blockers",
-    dueDate: new Date(2023, 5, 10, 10, 0), // June 10, 2023, 10:00 AM
-    priority: "medium",
-    category: "Work",
-    assignedTo: "Sarah",
-  },
-  {
-    id: "task3",
-    title: "Research new tools",
-    description: "Evaluate project management tools for team efficiency",
-    dueDate: new Date(2023, 5, 20, 17, 0), // June 20, 2023, 5:00 PM
-    priority: "low",
-    category: "Work",
-  },
-  {
-    id: "task4",
-    title: "Doctor's appointment",
-    description: "Annual checkup at City Health Clinic",
-    dueDate: new Date(2023, 5, 12, 9, 30), // June 12, 2023, 9:30 AM
-    priority: "medium",
-    category: "Health",
-    assignedTo: "Me",
-  },
-  {
-    id: "task5",
-    title: "Grocery shopping",
-    description: "Pick up items for dinner party",
-    dueDate: new Date(2023, 5, 8, 18, 0), // June 8, 2023, 6:00 PM
-    priority: "low",
-    category: "Errands",
-  },
-  {
-    id: "task6",
-    title: "Update website content",
-    description: "Refresh homepage and add new product descriptions",
-    dueDate: new Date(2023, 5, 18, 12, 0), // June 18, 2023, 12:00 PM
-    priority: "high",
-    category: "Work",
-    assignedTo: "Michael",
-  },
-];
+import { useTasks } from "@/hooks/use-tasks";
 
 const TasksPage = () => {
-  const [tasks, setTasks] = useState<TaskProps[]>(initialTasks);
+  const { tasks, createTask, updateTask } = useTasks();
   const [activeView, setActiveView] = useState("list");
   
-  const handleTaskCreate = (newTask: TaskProps) => {
-    setTasks([...tasks, newTask]);
+  const handleTaskCreate = (newTask: any) => {
+    createTask(newTask);
   };
   
-  const handleTaskUpdate = (updatedTask: TaskProps) => {
-    setTasks(tasks.map(task => task.id === updatedTask.id ? updatedTask : task));
+  const handleTaskUpdate = (updatedTask: any) => {
+    const { id, ...rest } = updatedTask;
+    updateTask(id, rest);
   };
 
   return (

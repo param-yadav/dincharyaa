@@ -2,27 +2,27 @@
 import { useEffect, useState } from "react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
-import { TaskProps } from "./TaskCard";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { DrawerDialog } from "./DrawerDialog";
 import TaskForm from "./TaskForm";
+import { Task } from "@/hooks/use-tasks";
 
 interface CalendarViewProps {
-  tasks: TaskProps[];
-  onTaskCreate: (task: TaskProps) => void;
-  onTaskUpdate: (task: TaskProps) => void;
+  tasks: Task[];
+  onTaskCreate: (task: Omit<Task, "id" | "user_id" | "created_at" | "updated_at">) => void;
+  onTaskUpdate: (task: Task) => void;
 }
 
 const CalendarView = ({ tasks, onTaskCreate, onTaskUpdate }: CalendarViewProps) => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [displayMonth, setDisplayMonth] = useState<Date>(new Date());
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [selectedTask, setSelectedTask] = useState<TaskProps | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [mode, setMode] = useState<"create" | "edit">("create");
   
   const tasksForSelectedDate = tasks.filter(
-    (task) => task.dueDate && isSameDay(new Date(task.dueDate), selectedDate)
+    (task) => task.start_time && isSameDay(new Date(task.start_time), selectedDate)
   );
 
   const handleDateSelect = (date: Date | undefined) => {
@@ -37,21 +37,20 @@ const CalendarView = ({ tasks, onTaskCreate, onTaskUpdate }: CalendarViewProps) 
     setIsFormOpen(true);
   };
 
-  const handleEditTask = (task: TaskProps) => {
+  const handleEditTask = (task: Task) => {
     setMode("edit");
     setSelectedTask(task);
     setIsFormOpen(true);
   };
 
-  const handleFormSubmit = (task: TaskProps) => {
+  const handleFormSubmit = (task: Omit<Task, "id" | "user_id" | "created_at" | "updated_at">) => {
     if (mode === "create") {
-      onTaskCreate({
-        ...task,
-        id: `task-${Date.now()}`,
-        dueDate: selectedDate
+      onTaskCreate(task);
+    } else if (selectedTask) {
+      onTaskUpdate({
+        ...selectedTask,
+        ...task
       });
-    } else {
-      onTaskUpdate(task);
     }
     
     setIsFormOpen(false);
@@ -131,9 +130,10 @@ const CalendarView = ({ tasks, onTaskCreate, onTaskUpdate }: CalendarViewProps) 
                 {task.description && (
                   <p className="text-sm text-dincharya-text/70 dark:text-white/70 mt-2">{task.description}</p>
                 )}
-                {task.dueDate && (
+                {task.start_time && (
                   <p className="text-xs text-dincharya-text/60 dark:text-white/60 mt-2">
-                    {format(new Date(task.dueDate), "h:mm a")}
+                    {format(new Date(task.start_time), "h:mm a")}
+                    {task.end_time && ` - ${format(new Date(task.end_time), "h:mm a")}`}
                   </p>
                 )}
               </div>

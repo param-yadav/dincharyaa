@@ -25,43 +25,84 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { format } from "date-fns";
-import { CalendarIcon, Plus } from "lucide-react";
+import { format, parse, setHours, setMinutes } from "date-fns";
+import { CalendarIcon, Plus, Pin, PinOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { TaskProps } from "./TaskCard";
+import { Switch } from "@/components/ui/switch";
+import { Task } from "@/hooks/use-tasks";
+import { useAuth } from "@/hooks/use-auth";
+import { Checkbox } from "@/components/ui/checkbox";
 
-interface TaskFormProps {
-  onTaskCreate?: (task: TaskProps) => void;
-  initialData?: TaskProps | null;
-  onSubmit?: (task: TaskProps) => void;
+export interface TaskFormProps {
+  onTaskCreate?: (task: Omit<Task, "id" | "user_id" | "created_at" | "updated_at">) => void;
+  initialData?: Task | null;
+  onSubmit?: (task: Omit<Task, "id" | "user_id" | "created_at" | "updated_at">) => void;
   onCancel?: () => void;
 }
+
+const parseTimeString = (timeString: string): { hours: number; minutes: number } => {
+  const [hours, minutes] = timeString.split(':').map(Number);
+  return { hours, minutes };
+};
+
+const formatTimeForInput = (date: Date | null): string => {
+  if (!date) return '';
+  return format(date, "HH:mm");
+};
 
 const TaskForm = ({ onTaskCreate, initialData, onSubmit, onCancel }: TaskFormProps) => {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [dueDate, setDueDate] = useState<Date | undefined>(new Date());
+  const [startDate, setStartDate] = useState<Date | undefined>(new Date());
+  const [startTime, setStartTime] = useState("09:00");
+  const [endTime, setEndTime] = useState("");
   const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
   const [category, setCategory] = useState("Work");
   const [assignedTo, setAssignedTo] = useState("");
+  const [isPinned, setIsPinned] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
   
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
     if (initialData) {
       setTitle(initialData.title);
       setDescription(initialData.description || "");
-      setDueDate(initialData.dueDate ? new Date(initialData.dueDate) : new Date());
+      
+      // Parse start time from initialData
+      if (initialData.start_time) {
+        const startDateTime = new Date(initialData.start_time);
+        setStartDate(startDateTime);
+        setStartTime(format(startDateTime, "HH:mm"));
+      }
+      
+      // Parse end time from initialData
+      if (initialData.end_time) {
+        setEndTime(format(new Date(initialData.end_time), "HH:mm"));
+      }
+      
       setPriority(initialData.priority || "medium");
       setCategory(initialData.category || "Work");
-      setAssignedTo(initialData.assignedTo || "");
+      setAssignedTo(initialData.assigned_to || "");
+      setIsPinned(initialData.is_pinned || false);
+      setIsCompleted(initialData.completed || false);
     }
   }, [initialData]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to create tasks",
+        variant: "destructive",
+      });
+      return;
+    }
     
     if (!title.trim()) {
       toast({
@@ -72,47 +113,90 @@ const TaskForm = ({ onTaskCreate, initialData, onSubmit, onCancel }: TaskFormPro
       return;
     }
     
-    if (!dueDate) {
+    if (!startDate) {
       toast({
-        title: "Due date required",
-        description: "Please select a due date for your task",
+        title: "Start date required",
+        description: "Please select a start date for your task",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!startTime) {
+      toast({
+        title: "Start time required",
+        description: "Please select a start time for your task",
         variant: "destructive",
       });
       return;
     }
     
-    const newTask: TaskProps = {
-      id: initialData?.id || Math.random().toString(36).substring(2, 11),
-      title,
-      description,
-      dueDate: dueDate,
-      priority,
-      category,
-      assignedTo: assignedTo || undefined,
-      completed: initialData?.completed || false,
-    };
-    
-    if (onSubmit) {
-      onSubmit(newTask);
-    } else if (onTaskCreate) {
-      onTaskCreate(newTask);
-    }
-    
-    toast({
-      title: initialData ? "Task updated" : "Task created",
-      description: `"${title}" has been ${initialData ? "updated" : "added to your tasks"}.`,
-    });
-    
-    setTitle("");
-    setDescription("");
-    setDueDate(new Date());
-    setPriority("medium");
-    setCategory("Work");
-    setAssignedTo("");
-    setOpen(false);
-    
-    if (onCancel) {
-      onCancel();
+    try {
+      // Prepare start time
+      const { hours: startHours, minutes: startMinutes } = parseTimeString(startTime);
+      const startDateTime = setMinutes(setHours(startDate, startHours), startMinutes);
+      
+      // Prepare end time (if provided)
+      let endDateTime = undefined;
+      if (endTime) {
+        const { hours: endHours, minutes: endMinutes } = parseTimeString(endTime);
+        endDateTime = setMinutes(setHours(new Date(startDate), endHours), endMinutes);
+        
+        // Validate that end time is after start time
+        if (endDateTime <= startDateTime) {
+          toast({
+            title: "Invalid time range",
+            description: "End time must be after start time",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+      
+      const newTask: Omit<Task, "id" | "user_id" | "created_at" | "updated_at"> = {
+        title,
+        description,
+        start_time: startDateTime.toISOString(),
+        end_time: endDateTime?.toISOString(),
+        priority,
+        category,
+        assigned_to: assignedTo,
+        is_pinned: isPinned,
+        completed: isCompleted
+      };
+      
+      if (onSubmit) {
+        onSubmit(newTask);
+      } else if (onTaskCreate) {
+        onTaskCreate(newTask);
+      }
+      
+      // Reset form if this is a new task creation
+      if (!initialData) {
+        setTitle("");
+        setDescription("");
+        setStartDate(new Date());
+        setStartTime("09:00");
+        setEndTime("");
+        setPriority("medium");
+        setCategory("Work");
+        setAssignedTo("");
+        setIsPinned(false);
+        setIsCompleted(false);
+      }
+      
+      setOpen(false);
+      
+      if (onCancel && initialData) {
+        onCancel();
+      }
+    } catch (error) {
+      console.error("Error creating task:", error);
+      toast({
+        title: "Error creating task",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
     }
   };
 
@@ -121,18 +205,32 @@ const TaskForm = ({ onTaskCreate, initialData, onSubmit, onCancel }: TaskFormPro
     return (
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid gap-4 py-2">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="edit-title" className="text-right">
-              Title
-            </Label>
-            <Input
-              id="edit-title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="col-span-3"
-              placeholder="Enter task title"
-              required
-            />
+          <div className="flex justify-between items-center">
+            <div className="flex-1 grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-title" className="text-right">
+                Title
+              </Label>
+              <Input
+                id="edit-title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="col-span-3"
+                placeholder="Enter task title"
+                required
+              />
+            </div>
+            <div className="flex items-center space-x-2 ml-4">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className={cn(isPinned ? "text-amber-500" : "text-muted-foreground")}
+                onClick={() => setIsPinned(!isPinned)}
+              >
+                {isPinned ? <Pin className="h-4 w-4 fill-current" /> : <PinOff className="h-4 w-4" />}
+                <span className="sr-only">{isPinned ? "Unpin task" : "Pin task"}</span>
+              </Button>
+            </div>
           </div>
           
           <div className="grid grid-cols-4 items-center gap-4">
@@ -151,7 +249,7 @@ const TaskForm = ({ onTaskCreate, initialData, onSubmit, onCancel }: TaskFormPro
           
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="edit-dueDate" className="text-right">
-              Due Date
+              Date
             </Label>
             <div className="col-span-3">
               <Popover>
@@ -160,24 +258,51 @@ const TaskForm = ({ onTaskCreate, initialData, onSubmit, onCancel }: TaskFormPro
                     variant="outline"
                     className={cn(
                       "w-full justify-start text-left font-normal",
-                      !dueDate && "text-muted-foreground"
+                      !startDate && "text-muted-foreground"
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dueDate ? format(dueDate, "PPP") : <span>Pick a date</span>}
+                    {startDate ? format(startDate, "PPP") : <span>Pick a date</span>}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
-                    selected={dueDate}
-                    onSelect={setDueDate}
+                    selected={startDate}
+                    onSelect={setStartDate}
                     initialFocus
                     className="p-3 pointer-events-auto"
                   />
                 </PopoverContent>
               </Popover>
             </div>
+          </div>
+          
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="edit-startTime" className="text-right">
+              Start Time
+            </Label>
+            <Input
+              id="edit-startTime"
+              type="time"
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+              className="col-span-3"
+              required
+            />
+          </div>
+          
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="edit-endTime" className="text-right">
+              End Time
+            </Label>
+            <Input
+              id="edit-endTime"
+              type="time"
+              value={endTime}
+              onChange={(e) => setEndTime(e.target.value)}
+              className="col-span-3"
+            />
           </div>
           
           <div className="grid grid-cols-4 items-center gap-4">
@@ -224,22 +349,37 @@ const TaskForm = ({ onTaskCreate, initialData, onSubmit, onCancel }: TaskFormPro
             <Label htmlFor="edit-assignedTo" className="text-right">
               Assign To
             </Label>
-            <Select
+            <Input
+              id="edit-assignedTo"
               value={assignedTo}
-              onValueChange={setAssignedTo}
-            >
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Assign to" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Me">Me</SelectItem>
-                <SelectItem value="John">John</SelectItem>
-                <SelectItem value="Sarah">Sarah</SelectItem>
-                <SelectItem value="Michael">Michael</SelectItem>
-                <SelectItem value="Emily">Emily</SelectItem>
-              </SelectContent>
-            </Select>
+              onChange={(e) => setAssignedTo(e.target.value)}
+              className="col-span-3"
+              placeholder="Enter email address or name"
+            />
           </div>
+          
+          {initialData && (
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-completed" className="text-right">
+                Status
+              </Label>
+              <div className="flex items-center space-x-2 col-span-3">
+                <Checkbox
+                  id="edit-completed"
+                  checked={isCompleted}
+                  onCheckedChange={(checked) => 
+                    setIsCompleted(checked === true)
+                  }
+                />
+                <label
+                  htmlFor="edit-completed"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Mark as completed
+                </label>
+              </div>
+            </div>
+          )}
         </div>
         
         <div className="flex justify-end space-x-2">
@@ -268,18 +408,32 @@ const TaskForm = ({ onTaskCreate, initialData, onSubmit, onCancel }: TaskFormPro
             <DialogTitle>Create New Task</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="title" className="text-right">
-                Title
-              </Label>
-              <Input
-                id="title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="col-span-3"
-                placeholder="Enter task title"
-                required
-              />
+            <div className="flex justify-between items-center">
+              <div className="flex-1 grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="title" className="text-right">
+                  Title
+                </Label>
+                <Input
+                  id="title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="col-span-3"
+                  placeholder="Enter task title"
+                  required
+                />
+              </div>
+              <div className="flex items-center space-x-2 ml-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className={cn(isPinned ? "text-amber-500" : "text-muted-foreground")}
+                  onClick={() => setIsPinned(!isPinned)}
+                >
+                  {isPinned ? <Pin className="h-4 w-4 fill-current" /> : <PinOff className="h-4 w-4" />}
+                  <span className="sr-only">{isPinned ? "Unpin task" : "Pin task"}</span>
+                </Button>
+              </div>
             </div>
             
             <div className="grid grid-cols-4 items-center gap-4">
@@ -297,8 +451,8 @@ const TaskForm = ({ onTaskCreate, initialData, onSubmit, onCancel }: TaskFormPro
             </div>
             
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="dueDate" className="text-right">
-                Due Date
+              <Label htmlFor="startDate" className="text-right">
+                Date
               </Label>
               <div className="col-span-3">
                 <Popover>
@@ -307,24 +461,51 @@ const TaskForm = ({ onTaskCreate, initialData, onSubmit, onCancel }: TaskFormPro
                       variant="outline"
                       className={cn(
                         "w-full justify-start text-left font-normal",
-                        !dueDate && "text-muted-foreground"
+                        !startDate && "text-muted-foreground"
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {dueDate ? format(dueDate, "PPP") : <span>Pick a date</span>}
+                      {startDate ? format(startDate, "PPP") : <span>Pick a date</span>}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
-                      selected={dueDate}
-                      onSelect={setDueDate}
+                      selected={startDate}
+                      onSelect={setStartDate}
                       initialFocus
                       className="p-3 pointer-events-auto"
                     />
                   </PopoverContent>
                 </Popover>
               </div>
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="startTime" className="text-right">
+                Start Time
+              </Label>
+              <Input
+                id="startTime"
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                className="col-span-3"
+                required
+              />
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="endTime" className="text-right">
+                End Time
+              </Label>
+              <Input
+                id="endTime"
+                type="time"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                className="col-span-3"
+              />
             </div>
             
             <div className="grid grid-cols-4 items-center gap-4">
@@ -371,21 +552,13 @@ const TaskForm = ({ onTaskCreate, initialData, onSubmit, onCancel }: TaskFormPro
               <Label htmlFor="assignedTo" className="text-right">
                 Assign To
               </Label>
-              <Select
+              <Input
+                id="assignedTo"
                 value={assignedTo}
-                onValueChange={setAssignedTo}
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Assign to" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Me">Me</SelectItem>
-                  <SelectItem value="John">John</SelectItem>
-                  <SelectItem value="Sarah">Sarah</SelectItem>
-                  <SelectItem value="Michael">Michael</SelectItem>
-                  <SelectItem value="Emily">Emily</SelectItem>
-                </SelectContent>
-              </Select>
+                onChange={(e) => setAssignedTo(e.target.value)}
+                className="col-span-3"
+                placeholder="Enter email address or name"
+              />
             </div>
           </div>
           <DialogFooter>

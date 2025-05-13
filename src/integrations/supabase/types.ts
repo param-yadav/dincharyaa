@@ -9,13 +9,96 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      schedules: {
+        Row: {
+          created_at: string | null
+          date_from: string
+          date_to: string
+          id: string
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          date_from: string
+          date_to: string
+          id?: string
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          date_from?: string
+          date_to?: string
+          id?: string
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          assigned_to: string | null
+          assigned_user_id: string | null
+          category: string | null
+          completed: boolean | null
+          created_at: string | null
+          description: string | null
+          end_time: string | null
+          id: string
+          is_pinned: boolean | null
+          priority: string | null
+          start_time: string
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          assigned_user_id?: string | null
+          category?: string | null
+          completed?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          end_time?: string | null
+          id?: string
+          is_pinned?: boolean | null
+          priority?: string | null
+          start_time: string
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          assigned_to?: string | null
+          assigned_user_id?: string | null
+          category?: string | null
+          completed?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          end_time?: string | null
+          id?: string
+          is_pinned?: boolean | null
+          priority?: string | null
+          start_time?: string
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      find_user_id_by_email: {
+        Args: { email: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
