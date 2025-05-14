@@ -26,13 +26,13 @@ interface NavItemProps {
   label: string;
   to: string;
   isActive?: boolean;
-  isImplemented?: boolean;
+  isCollapsed?: boolean;
   onClick?: () => void;
 }
 
-const NavItem = ({ icon: Icon, label, to, isActive, isImplemented, onClick }: NavItemProps) => {
+const NavItem = ({ icon: Icon, label, to, isActive, isCollapsed, onClick }: NavItemProps) => {
   return (
-    <Link to={isImplemented ? to : "#"} className="block w-full mb-1" onClick={onClick}>
+    <Link to={to} className="block w-full mb-1" onClick={onClick}>
       <Button
         variant="ghost"
         className={cn(
@@ -43,7 +43,7 @@ const NavItem = ({ icon: Icon, label, to, isActive, isImplemented, onClick }: Na
         )}
       >
         <Icon className="h-5 w-5" />
-        <span>{label}</span>
+        {!isCollapsed && <span>{label}</span>}
       </Button>
     </Link>
   );
@@ -54,6 +54,7 @@ const Sidebar = () => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [collapsed, setCollapsed] = useState(false);
+  const [hovered, setHovered] = useState(false);
   
   // Reset collapse state based on screen size
   useEffect(() => {
@@ -62,38 +63,36 @@ const Sidebar = () => {
   
   const navItems = [
     { id: "tasks", label: "Task List", icon: List, path: "/tasks", implemented: true },
-    { id: "calendar", label: "Calendar", icon: Calendar, path: "/calendar", implemented: false },
-    { id: "team", label: "Team", icon: Users, path: "/team", implemented: false },
-    { id: "notes", label: "Notes", icon: FileText, path: "/notes", implemented: false },
-    { id: "timer", label: "Timer", icon: Timer, path: "/timer", implemented: false },
-    { id: "stopwatch", label: "Stopwatch", icon: Watch, path: "/stopwatch", implemented: false },
-    { id: "analysis", label: "Analysis", icon: FileChartColumn, path: "/analysis", implemented: false }
+    { id: "calendar", label: "Calendar", icon: Calendar, path: "/scheduler", implemented: true },
+    { id: "team", label: "Team", icon: Users, path: "/team", implemented: true },
+    { id: "notes", label: "Notes", icon: FileText, path: "/notes", implemented: true },
+    { id: "timer", label: "Timer", icon: Timer, path: "/timer", implemented: true },
+    { id: "analytics", label: "Analytics", icon: FileChartColumn, path: "/analytics", implemented: true }
   ];
 
   const supportItems = [
-    { id: "settings", label: "Settings", icon: Settings, path: "/settings", implemented: false },
-    { id: "help", label: "Help & Support", icon: HelpCircle, path: "/help", implemented: false },
-    { id: "contact", label: "Contact Us", icon: Mail, path: "/contact", implemented: true }
+    { id: "settings", label: "Settings", icon: Settings, path: "/settings", implemented: true },
+    { id: "help", label: "Help", icon: HelpCircle, path: "/help", implemented: false },
+    { id: "contact", label: "Contact", icon: Mail, path: "/contact", implemented: true }
   ];
 
-  const handleComingSoon = (feature: string) => {
-    toast({
-      title: "Coming Soon",
-      description: `The ${feature} feature is under development`,
-    });
-  };
-
+  const isCollapsedCalc = collapsed && !hovered;
+  
   return (
-    <div className={cn(
-      "relative h-full bg-white dark:bg-dincharya-text/90 border-r border-dincharya-muted/20 flex flex-col shadow-lg transition-all duration-300",
-      collapsed ? "w-[70px]" : "w-64"
-    )}>
+    <div 
+      className={cn(
+        "relative h-full bg-white dark:bg-dincharya-text/90 border-r border-dincharya-muted/20 flex flex-col shadow-lg transition-all duration-300",
+        isCollapsedCalc ? "w-[70px]" : "w-64"
+      )}
+      onMouseEnter={() => !isMobile && setHovered(true)}
+      onMouseLeave={() => !isMobile && setHovered(false)}
+    >
       {/* Collapse Toggle */}
       <button 
         className="absolute -right-3 top-20 h-6 w-6 rounded-full bg-dincharya-background border border-dincharya-muted/30 flex items-center justify-center z-10 shadow-md"
         onClick={() => setCollapsed(!collapsed)}
       >
-        {collapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
+        {isCollapsedCalc ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
       </button>
 
       {/* Background Texture */}
@@ -101,8 +100,8 @@ const Sidebar = () => {
         <div className="w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGcgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIj48cGF0aCBmaWxsPSIjQjg0QzE0IiBkPSJNMzYgMzRoLTJWMTZoMnpNNDAgMzRoLTJWMTZoMnpNOCAzNEg2VjE2aDJ6TTEyIDM0aC0yVjE2aDJ6Ii8+PHBhdGggZD0iTTYwIDBoLTJ2NjBoMnpNNDIgMGgtMnY2MGgyeiIgZmlsbD0iI0I4NEMxNCIvPjxwYXRoIGQ9Ik01MCAwbC01MCA1MEw1MCA2MHoiIHN0cm9rZT0iI0I4NEMxNCIvPjxwYXRoIGQ9Ik01MCAwbC01MCA1MEw1MCA2MHpNMTYtOGwtMjUgMjVMNDAgNjZ6TTU4LTE3bC0yNSAyNUw4MiA1N3oiIHN0cm9rZT0iI0I4NEMxNCIvPjwvZz48L3N2Zz4=')]" />
       </div>
 
-      <div className={cn("p-4 flex items-center", collapsed ? "justify-center" : "")}>
-        {collapsed ? (
+      <div className={cn("p-4 flex items-center", isCollapsedCalc ? "justify-center" : "")}>
+        {isCollapsedCalc ? (
           <div className="h-8 w-8 rounded-full bg-dincharya-primary/20 flex items-center justify-center">
             <Clock className="h-5 w-5 text-dincharya-primary" />
           </div>
@@ -111,7 +110,7 @@ const Sidebar = () => {
             <div className="h-6 w-6 rounded-full bg-dincharya-primary/20 flex items-center justify-center">
               <Clock className="h-4 w-4 text-dincharya-primary" />
             </div>
-            Dincharya Tasks
+            Tasks
           </h1>
         )}
       </div>
@@ -119,7 +118,7 @@ const Sidebar = () => {
       {/* Main Navigation */}
       <div className="flex-1 p-3 overflow-auto">
         <div className="mb-4">
-          {!collapsed && (
+          {!isCollapsedCalc && (
             <p className="text-xs uppercase text-dincharya-text/50 dark:text-white/50 font-semibold ml-3 mb-2">
               Main
             </p>
@@ -131,11 +130,10 @@ const Sidebar = () => {
               <NavItem
                 key={item.id}
                 icon={item.icon}
-                label={collapsed ? "" : item.label}
+                label={item.label}
                 to={item.path}
                 isActive={isActive}
-                isImplemented={item.implemented}
-                onClick={!item.implemented ? () => handleComingSoon(item.label) : undefined}
+                isCollapsed={isCollapsedCalc}
               />
             );
           })}
@@ -143,7 +141,7 @@ const Sidebar = () => {
         
         {/* Support Section */}
         <div>
-          {!collapsed && (
+          {!isCollapsedCalc && (
             <p className="text-xs uppercase text-dincharya-text/50 dark:text-white/50 font-semibold ml-3 mb-2">
               Support
             </p>
@@ -155,11 +153,14 @@ const Sidebar = () => {
               <NavItem
                 key={item.id}
                 icon={item.icon}
-                label={collapsed ? "" : item.label}
+                label={item.label}
                 to={item.path}
                 isActive={isActive}
-                isImplemented={item.implemented}
-                onClick={!item.implemented ? () => handleComingSoon(item.label) : undefined}
+                isCollapsed={isCollapsedCalc}
+                onClick={!item.implemented ? () => toast({
+                  title: "Coming Soon",
+                  description: `The ${item.label} feature is under development`,
+                }) : undefined}
               />
             );
           })}
@@ -168,8 +169,15 @@ const Sidebar = () => {
       
       {/* User Section */}
       <div className="p-3 border-t border-dincharya-muted/20">
-        <Button variant="outline" className={cn("w-full", collapsed && "px-0")}>
-          <Users className="h-4 w-4 mr-2" /> {!collapsed && "Manage Team"}
+        <Button 
+          variant="outline" 
+          className={cn(
+            "w-full flex items-center justify-center gap-2", 
+            isCollapsedCalc && "px-0"
+          )}
+        >
+          <Users className="h-4 w-4" /> 
+          {!isCollapsedCalc && "Manage Team"}
         </Button>
       </div>
     </div>

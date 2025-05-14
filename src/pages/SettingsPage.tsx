@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
 
 const SettingsPage = () => {
   const { user } = useAuth();
@@ -20,8 +21,58 @@ const SettingsPage = () => {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [theme, setTheme] = useState("system");
 
-  const handleProfileSave = () => {
+  // Load user settings from localStorage on component mount
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('userSettings');
+    if (savedSettings) {
+      const settings = JSON.parse(savedSettings);
+      if (settings.name) setName(settings.name);
+      if (settings.emailNotifications !== undefined) setEmailNotifications(settings.emailNotifications);
+      if (settings.taskReminders !== undefined) setTaskReminders(settings.taskReminders);
+      if (settings.weeklyDigest !== undefined) setWeeklyDigest(settings.weeklyDigest);
+      if (settings.theme) setTheme(settings.theme);
+    }
+  }, []);
+
+  const saveSettings = (settingsObj: any) => {
+    const currentSettings = localStorage.getItem('userSettings') 
+      ? JSON.parse(localStorage.getItem('userSettings') || '{}') 
+      : {};
+    
+    const newSettings = {
+      ...currentSettings,
+      ...settingsObj
+    };
+    
+    localStorage.setItem('userSettings', JSON.stringify(newSettings));
+  };
+
+  const handleProfileSave = async () => {
+    saveSettings({ name });
+    
+    // If user is authenticated, update their metadata
+    if (user) {
+      try {
+        const { error } = await supabase.auth.updateUser({
+          data: { 
+            full_name: name 
+          }
+        });
+        
+        if (error) throw error;
+      } 
+      catch (error: any) {
+        toast({
+          title: "Error updating profile",
+          description: error.message,
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+    
     toast({
       title: "Profile updated",
       description: "Your profile information has been updated",
@@ -29,13 +80,28 @@ const SettingsPage = () => {
   };
 
   const handleNotificationsSave = () => {
+    saveSettings({
+      emailNotifications,
+      taskReminders,
+      weeklyDigest
+    });
+    
     toast({
       title: "Notification preferences updated",
       description: "Your notification settings have been saved",
     });
   };
 
-  const handlePasswordChange = () => {
+  const handlePasswordChange = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to change your password",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (newPassword !== confirmPassword) {
       toast({
         title: "Passwords don't match",
@@ -45,14 +111,62 @@ const SettingsPage = () => {
       return;
     }
     
-    toast({
-      title: "Password changed",
-      description: "Your password has been updated successfully",
-    });
+    if (newPassword.length < 6) {
+      toast({
+        title: "Password too short",
+        description: "Your password must be at least 6 characters long",
+        variant: "destructive",
+      });
+      return;
+    }
     
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
+    try {
+      const { error } = await supabase.auth.updateUser({ 
+        password: newPassword 
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Password changed",
+        description: "Your password has been updated successfully",
+      });
+      
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } 
+    catch (error: any) {
+      toast({
+        title: "Error changing password",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleThemeChange = (newTheme: string) => {
+    setTheme(newTheme);
+    saveSettings({ theme: newTheme });
+    
+    // Apply theme to document
+    if (newTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else if (newTheme === 'light') {
+      document.documentElement.classList.remove('dark');
+    } else if (newTheme === 'system') {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (prefersDark) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    }
+    
+    toast({
+      title: "Theme updated",
+      description: "Your theme preference has been saved",
+    });
   };
 
   return (
@@ -168,36 +282,44 @@ const SettingsPage = () => {
               <CardDescription>Update your account password</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="current-password">Current Password</Label>
-                <Input
-                  id="current-password"
-                  type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="new-password">New Password</Label>
-                <Input
-                  id="new-password"
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirm-password">Confirm New Password</Label>
-                <Input
-                  id="confirm-password"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                />
-              </div>
+              {user ? (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="current-password">Current Password</Label>
+                    <Input
+                      id="current-password"
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="new-password">New Password</Label>
+                    <Input
+                      id="new-password"
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm-password">Confirm New Password</Label>
+                    <Input
+                      id="confirm-password"
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                    />
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-4 text-muted-foreground">
+                  You need to be signed in to change your password
+                </div>
+              )}
             </CardContent>
             <CardFooter>
-              <Button onClick={handlePasswordChange}>Change Password</Button>
+              <Button onClick={handlePasswordChange} disabled={!user}>Change Password</Button>
             </CardFooter>
           </Card>
         </TabsContent>
@@ -213,19 +335,31 @@ const SettingsPage = () => {
                 <div>
                   <Label className="text-base">Theme</Label>
                   <div className="grid grid-cols-3 gap-4 mt-3">
-                    <Button variant="outline" className="justify-start">
+                    <Button 
+                      variant={theme === "light" ? "default" : "outline"} 
+                      className="justify-start"
+                      onClick={() => handleThemeChange("light")}
+                    >
                       <span className="flex h-5 w-5 items-center justify-center rounded-full border mr-2 bg-background">
                         <span className="h-2.5 w-2.5 rounded-full bg-foreground"></span>
                       </span>
                       Light
                     </Button>
-                    <Button variant="outline" className="justify-start">
+                    <Button 
+                      variant={theme === "dark" ? "default" : "outline"} 
+                      className="justify-start"
+                      onClick={() => handleThemeChange("dark")}
+                    >
                       <span className="flex h-5 w-5 items-center justify-center rounded-full border mr-2 bg-black">
                         <span className="h-2.5 w-2.5 rounded-full bg-white"></span>
                       </span>
                       Dark
                     </Button>
-                    <Button variant="outline" className="justify-start">
+                    <Button 
+                      variant={theme === "system" ? "default" : "outline"} 
+                      className="justify-start"
+                      onClick={() => handleThemeChange("system")}
+                    >
                       <span className="flex h-5 w-5 items-center justify-center rounded-full border mr-2 bg-[conic-gradient(at_top,_var(--tw-gradient-stops))] from-gray-900 via-gray-100 to-gray-900">
                       </span>
                       System
@@ -234,9 +368,6 @@ const SettingsPage = () => {
                 </div>
               </div>
             </CardContent>
-            <CardFooter>
-              <Button>Save Preferences</Button>
-            </CardFooter>
           </Card>
         </TabsContent>
       </Tabs>

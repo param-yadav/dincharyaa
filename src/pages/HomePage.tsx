@@ -14,9 +14,11 @@ import HeroImage from "../components/home/HeroImage";
 import FeatureCard from "../components/home/FeatureCard";
 import TestimonialCard from "../components/home/TestimonialCard";
 import { useState, useEffect } from "react";
+import { useAuth } from "@/hooks/use-auth";
 
 const HomePage = () => {
   const [isVisible, setIsVisible] = useState(false);
+  const { user } = useAuth();
   
   useEffect(() => {
     setIsVisible(true);
@@ -65,19 +67,19 @@ const HomePage = () => {
     {
       name: "Priya Sharma",
       role: "Product Manager",
-      content: "Dincharya has transformed how I organize my day. The intuitive interface and beautiful design make task management enjoyable!",
+      content: "This app has transformed how I organize my day. The intuitive interface and beautiful design make task management enjoyable!",
       avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80"
     },
     {
       name: "Rahul Patel",
       role: "Freelance Designer",
-      content: "As a freelancer juggling multiple projects, Dincharya keeps me on track. The reminders and progress tracking are game-changers!",
+      content: "As a freelancer juggling multiple projects, this app keeps me on track. The reminders and progress tracking are game-changers!",
       avatar: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80"
     },
     {
       name: "Meera Kapoor",
       role: "Student",
-      content: "Balancing studies and personal life was challenging until I found Dincharya. Now I can manage my assignments and social activities efficiently.",
+      content: "Balancing studies and personal life was challenging until I found this platform. Now I can manage my assignments and social activities efficiently.",
       avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80"
     }
   ];
@@ -92,14 +94,20 @@ const HomePage = () => {
               Manage your tasks <span className="text-dincharya-primary">efficiently</span>
             </h1>
             <p className="text-xl text-dincharya-text/80 mb-8 max-w-lg">
-              Organize your daily tasks, set reminders, and track your progress with ease using Dincharya's beautiful and intuitive interface.
+              Organize your daily tasks, set reminders, and track your progress with ease using our beautiful and intuitive interface.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button className="btn-primary text-base px-8 py-6">
-                Get Started
-              </Button>
-              <Button variant="outline" className="text-base px-8 py-6">
-                Learn More
+              {user ? (
+                <Button className="btn-primary text-base px-8 py-6" asChild>
+                  <Link to="/tasks">Go to Dashboard</Link>
+                </Button>
+              ) : (
+                <Button className="btn-primary text-base px-8 py-6" asChild>
+                  <Link to="/auth">Get Started</Link>
+                </Button>
+              )}
+              <Button variant="outline" className="text-base px-8 py-6" asChild>
+                <Link to="/about">Learn More</Link>
               </Button>
             </div>
           </div>
@@ -112,11 +120,11 @@ const HomePage = () => {
       {/* Features Section */}
       <section className="py-16 bg-white dark:bg-dincharya-text/90">
         <div className="container mx-auto px-4">
-          <h2 className="section-heading text-center">
+          <h2 className="section-heading text-center text-3xl font-bold mb-3">
             Features designed for productivity
           </h2>
-          <p className="section-subheading text-center mx-auto">
-            Discover how Dincharya can help you manage your time and tasks effectively
+          <p className="section-subheading text-center mx-auto text-muted-foreground mb-8 max-w-2xl">
+            Discover how our app can help you manage your time and tasks effectively
           </p>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12">
@@ -138,15 +146,23 @@ const HomePage = () => {
                   Ready to transform your productivity?
                 </h2>
                 <p className="text-dincharya-text/80 dark:text-white/80 mb-0 max-w-lg">
-                  Join thousands of users who have improved their daily routine with Dincharya. Start for free today!
+                  Join thousands of users who have improved their daily routine with our platform. Start for free today!
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button className="btn-primary text-base px-8 py-6">
-                  Sign Up Free
-                </Button>
-                <Button variant="outline" className="text-base px-8 py-6">
-                  See Demo <ArrowRight className="ml-2 h-5 w-5" />
+                {user ? (
+                  <Button className="btn-primary text-base px-8 py-6" asChild>
+                    <Link to="/tasks">Go to Dashboard</Link>
+                  </Button>
+                ) : (
+                  <Button className="btn-primary text-base px-8 py-6" asChild>
+                    <Link to="/auth">Sign Up Free</Link>
+                  </Button>
+                )}
+                <Button variant="outline" className="text-base px-8 py-6" asChild>
+                  <Link to="/about">
+                    Learn More <ArrowRight className="ml-2 h-5 w-5" />
+                  </Link>
                 </Button>
               </div>
             </div>
@@ -157,11 +173,11 @@ const HomePage = () => {
       {/* Testimonials */}
       <section className="py-16 bg-white dark:bg-dincharya-text/90">
         <div className="container mx-auto px-4">
-          <h2 className="section-heading text-center">
+          <h2 className="section-heading text-center text-3xl font-bold mb-3">
             What our users say
           </h2>
-          <p className="section-subheading text-center mx-auto">
-            Discover how Dincharya has helped people improve their productivity
+          <p className="section-subheading text-center mx-auto text-muted-foreground mb-8 max-w-2xl">
+            Discover how our app has helped people improve their productivity
           </p>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
@@ -176,14 +192,20 @@ const HomePage = () => {
       <section className="py-20 bg-gradient-to-r from-dincharya-primary to-dincharya-accent text-white">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-6">
-            Start organizing your day with Dincharya
+            Start organizing your day now
           </h2>
           <p className="text-xl text-white/80 mb-8 max-w-2xl mx-auto">
             Join thousands of satisfied users and transform your productivity today.
           </p>
-          <Button className="bg-white text-dincharya-primary hover:bg-white/90 text-base px-8 py-6">
-            Get Started Now
-          </Button>
+          {user ? (
+            <Button className="bg-white text-dincharya-primary hover:bg-white/90 text-base px-8 py-6" asChild>
+              <Link to="/tasks">Go to Dashboard</Link>
+            </Button>
+          ) : (
+            <Button className="bg-white text-dincharya-primary hover:bg-white/90 text-base px-8 py-6" asChild>
+              <Link to="/auth">Get Started Now</Link>
+            </Button>
+          )}
         </div>
       </section>
     </div>

@@ -19,6 +19,8 @@ import AnalyticsPage from "./pages/AnalyticsPage";
 import TeamPage from "./pages/TeamPage";
 import SettingsPage from "./pages/SettingsPage";
 import SchedulerPage from "./pages/SchedulerPage";
+import NotesPage from "./pages/NotesPage";
+import TimerPage from "./pages/TimerPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -64,6 +66,16 @@ const App = () => (
             <Route path="/scheduler" element={
               <ProtectedRoute>
                 <Layout><SchedulerPage /></Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/notes" element={
+              <ProtectedRoute>
+                <Layout><NotesPage /></Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/timer" element={
+              <ProtectedRoute>
+                <Layout><TimerPage /></Layout>
               </ProtectedRoute>
             } />
             

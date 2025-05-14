@@ -402,121 +402,122 @@ const TaskForm = ({ onTaskCreate, initialData, onSubmit, onCancel }: TaskFormPro
           <Plus className="h-4 w-4" /> Add Task
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] bg-amber-100 border-amber-200">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Create New Task</DialogTitle>
+            <DialogTitle className="text-center text-xl">Create New Task</DialogTitle>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="flex justify-between items-center">
-              <div className="flex-1 grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="title" className="text-right">
-                  Title
-                </Label>
+          <div className="grid gap-5 py-4">
+            <div className="grid grid-cols-[100px_1fr] items-center gap-4">
+              <Label htmlFor="title" className="text-right font-medium">
+                Title
+              </Label>
+              <div className="flex gap-2 items-center">
                 <Input
                   id="title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="col-span-3"
+                  className="border-amber-300 bg-white"
                   placeholder="Enter task title"
                   required
                 />
-              </div>
-              <div className="flex items-center space-x-2 ml-4">
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="ghost"
                   size="icon"
                   className={cn(isPinned ? "text-amber-500" : "text-muted-foreground")}
                   onClick={() => setIsPinned(!isPinned)}
                 >
                   {isPinned ? <Pin className="h-4 w-4 fill-current" /> : <PinOff className="h-4 w-4" />}
-                  <span className="sr-only">{isPinned ? "Unpin task" : "Pin task"}</span>
                 </Button>
               </div>
             </div>
             
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="description" className="text-right">
+            <div className="grid grid-cols-[100px_1fr] items-start gap-4">
+              <Label htmlFor="description" className="text-right font-medium pt-2">
                 Description
               </Label>
               <Textarea
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="col-span-3"
+                className="border-amber-300 bg-white"
                 placeholder="Enter task description"
                 rows={3}
               />
             </div>
             
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="startDate" className="text-right">
+            <div className="grid grid-cols-[100px_1fr] items-center gap-4">
+              <Label htmlFor="startDate" className="text-right font-medium">
                 Date
               </Label>
-              <div className="col-span-3">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !startDate && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {startDate ? format(startDate, "PPP") : <span>Pick a date</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={startDate}
-                      onSelect={setStartDate}
-                      initialFocus
-                      className="p-3 pointer-events-auto"
-                    />
-                  </PopoverContent>
-                </Popover>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal border-amber-300 bg-white",
+                      !startDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {startDate ? format(startDate, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={startDate}
+                    onSelect={setStartDate}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            
+            <div className="grid grid-cols-[100px_1fr] items-center gap-4">
+              <Label htmlFor="startTime" className="text-right font-medium">
+                Start Time
+              </Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="startTime"
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  className="border-amber-300 bg-white"
+                  required
+                />
+                <Clock className="h-5 w-5 text-muted-foreground" />
               </div>
             </div>
             
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="startTime" className="text-right">
-                Start Time
-              </Label>
-              <Input
-                id="startTime"
-                type="time"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                className="col-span-3"
-                required
-              />
-            </div>
-            
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="endTime" className="text-right">
+            <div className="grid grid-cols-[100px_1fr] items-center gap-4">
+              <Label htmlFor="endTime" className="text-right font-medium">
                 End Time
               </Label>
-              <Input
-                id="endTime"
-                type="time"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                className="col-span-3"
-              />
+              <div className="flex items-center gap-2">
+                <Input
+                  id="endTime"
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  className="border-amber-300 bg-white"
+                />
+                <Clock className="h-5 w-5 text-muted-foreground" />
+              </div>
             </div>
             
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="priority" className="text-right">
+            <div className="grid grid-cols-[100px_1fr] items-center gap-4">
+              <Label htmlFor="priority" className="text-right font-medium">
                 Priority
               </Label>
               <Select
                 value={priority}
                 onValueChange={(value) => setPriority(value as "low" | "medium" | "high")}
               >
-                <SelectTrigger className="col-span-3">
+                <SelectTrigger className="border-amber-300 bg-white">
                   <SelectValue placeholder="Select priority" />
                 </SelectTrigger>
                 <SelectContent>
@@ -527,15 +528,15 @@ const TaskForm = ({ onTaskCreate, initialData, onSubmit, onCancel }: TaskFormPro
               </Select>
             </div>
             
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="category" className="text-right">
+            <div className="grid grid-cols-[100px_1fr] items-center gap-4">
+              <Label htmlFor="category" className="text-right font-medium">
                 Category
               </Label>
               <Select
                 value={category}
                 onValueChange={setCategory}
               >
-                <SelectTrigger className="col-span-3">
+                <SelectTrigger className="border-amber-300 bg-white">
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -548,21 +549,23 @@ const TaskForm = ({ onTaskCreate, initialData, onSubmit, onCancel }: TaskFormPro
               </Select>
             </div>
             
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="assignedTo" className="text-right">
+            <div className="grid grid-cols-[100px_1fr] items-center gap-4">
+              <Label htmlFor="assignedTo" className="text-right font-medium">
                 Assign To
               </Label>
               <Input
                 id="assignedTo"
                 value={assignedTo}
                 onChange={(e) => setAssignedTo(e.target.value)}
-                className="col-span-3"
+                className="border-amber-300 bg-white"
                 placeholder="Enter email address or name"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button type="submit">Create Task</Button>
+            <Button className="bg-amber-600 hover:bg-amber-700 w-full" type="submit">
+              Create Task
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
