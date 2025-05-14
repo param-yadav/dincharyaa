@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -26,7 +25,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { format, parse, setHours, setMinutes } from "date-fns";
-import { CalendarIcon, Plus, Pin, PinOff } from "lucide-react";
+import { CalendarIcon, Plus, Pin, PinOff, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
