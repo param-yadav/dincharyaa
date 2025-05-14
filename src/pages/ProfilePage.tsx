@@ -5,11 +5,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2, Upload, User } from "lucide-react";
+
+// Define Profile interface to match with the profiles table
+interface Profile {
+  id: string;
+  full_name: string | null;
+  bio: string | null;
+  phone: string | null;
+  location: string | null;
+  avatar_url: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
 
 const ProfilePage = () => {
   const { user } = useAuth();
@@ -54,16 +66,17 @@ const ProfilePage = () => {
           }
           
           if (profileData) {
-            setName(profileData.full_name || "");
-            setBio(profileData.bio || "");
-            setPhone(profileData.phone || "");
-            setLocation(profileData.location || "");
+            const profile = profileData as Profile;
+            setName(profile.full_name || "");
+            setBio(profile.bio || "");
+            setPhone(profile.phone || "");
+            setLocation(profile.location || "");
             
-            if (profileData.avatar_url) {
+            if (profile.avatar_url) {
               const { data: { publicUrl } } = supabase
                 .storage
                 .from('avatars')
-                .getPublicUrl(profileData.avatar_url);
+                .getPublicUrl(profile.avatar_url);
                 
               setAvatarUrl(publicUrl);
             }
@@ -117,7 +130,7 @@ const ProfilePage = () => {
           phone,
           location,
           updated_at: new Date().toISOString(),
-        });
+        } as Profile);
         
       if (upsertError) throw upsertError;
       
@@ -173,7 +186,7 @@ const ProfilePage = () => {
           id: user.id,
           avatar_url: filePath,
           updated_at: new Date().toISOString(),
-        });
+        } as Profile);
         
       if (updateError) throw updateError;
       

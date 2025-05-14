@@ -9,12 +9,46 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string | null
+          full_name: string | null
+          id: string
+          location: string | null
+          phone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id: string
+          location?: string | null
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id?: string
+          location?: string | null
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       schedules: {
         Row: {
           created_at: string | null
           date_from: string
           date_to: string
           id: string
+          is_all_day: boolean | null
           title: string
           updated_at: string | null
           user_id: string
@@ -24,6 +58,7 @@ export type Database = {
           date_from: string
           date_to: string
           id?: string
+          is_all_day?: boolean | null
           title: string
           updated_at?: string | null
           user_id: string
@@ -33,6 +68,7 @@ export type Database = {
           date_from?: string
           date_to?: string
           id?: string
+          is_all_day?: boolean | null
           title?: string
           updated_at?: string | null
           user_id?: string
