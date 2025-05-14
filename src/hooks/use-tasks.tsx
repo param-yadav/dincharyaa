@@ -45,7 +45,13 @@ export const useTasks = () => {
         throw error;
       }
       
-      setTasks(data || []);
+      // Ensure that the priority field is always one of the expected values
+      const typedData = data?.map(task => ({
+        ...task,
+        priority: validatePriority(task.priority)
+      })) || [];
+      
+      setTasks(typedData as Task[]);
     } catch (error: any) {
       toast({
         title: "Error fetching tasks",
@@ -56,6 +62,14 @@ export const useTasks = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Validate and normalize priority values
+  const validatePriority = (priority: string | null): "low" | "medium" | "high" => {
+    if (priority === "low" || priority === "medium" || priority === "high") {
+      return priority;
+    }
+    return "medium"; // Default to medium if not valid
   };
 
   // Create a new task
@@ -121,6 +135,11 @@ export const useTasks = () => {
     if (!user) return;
 
     try {
+      // Ensure priority is valid if it's being updated
+      if (updates.priority) {
+        updates.priority = validatePriority(updates.priority as string);
+      }
+
       const { error } = await supabase
         .from("tasks")
         .update(updates)
