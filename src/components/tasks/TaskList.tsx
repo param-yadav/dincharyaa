@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import TaskCard from "./TaskCard";
 import TaskForm from "./TaskForm";
@@ -11,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, SlidersHorizontal, Loader2 } from "lucide-react";
+import { Search, SlidersHorizontal, Loader2, Calendar } from "lucide-react";
 import { useTasks, Task } from "@/hooks/use-tasks";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
