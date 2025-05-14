@@ -15,11 +15,20 @@ import {
   Settings,
   HelpCircle,
   Mail,
+  BellRing,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  User,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { 
+  Tooltip, 
+  TooltipContent, 
+  TooltipProvider, 
+  TooltipTrigger 
+} from "@/components/ui/tooltip";
+import { useAuth } from "@/hooks/use-auth";
 
 interface NavItemProps {
   icon: React.ElementType;
@@ -28,11 +37,20 @@ interface NavItemProps {
   isActive?: boolean;
   isCollapsed?: boolean;
   onClick?: () => void;
+  notification?: number;
 }
 
-const NavItem = ({ icon: Icon, label, to, isActive, isCollapsed, onClick }: NavItemProps) => {
-  return (
-    <Link to={to} className="block w-full mb-1" onClick={onClick}>
+const NavItem = ({ 
+  icon: Icon, 
+  label, 
+  to, 
+  isActive, 
+  isCollapsed, 
+  onClick, 
+  notification 
+}: NavItemProps) => {
+  const itemContent = (
+    <div className="relative w-full">
       <Button
         variant="ghost"
         className={cn(
@@ -41,10 +59,41 @@ const NavItem = ({ icon: Icon, label, to, isActive, isCollapsed, onClick }: NavI
             ? "bg-dincharya-primary/15 text-dincharya-primary font-medium dark:bg-dincharya-primary/30" 
             : "hover:bg-dincharya-primary/5 text-dincharya-text dark:text-white/80 hover:dark:bg-dincharya-primary/20"
         )}
+        onClick={onClick}
       >
         <Icon className="h-5 w-5" />
         {!isCollapsed && <span>{label}</span>}
       </Button>
+      
+      {notification && notification > 0 && (
+        <span className={cn(
+          "absolute rounded-full bg-red-500 text-white text-xs flex items-center justify-center",
+          isCollapsed 
+            ? "top-1 right-1 min-w-[14px] h-[14px]" 
+            : "top-2 right-2 min-w-[18px] h-[18px] px-1"
+        )}>
+          {notification > 9 ? '9+' : notification}
+        </span>
+      )}
+    </div>
+  );
+
+  return isCollapsed ? (
+    <TooltipProvider delayDuration={300}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Link to={to} className="block w-full mb-1">
+            {itemContent}
+          </Link>
+        </TooltipTrigger>
+        <TooltipContent side="right">
+          <p>{label}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  ) : (
+    <Link to={to} className="block w-full mb-1">
+      {itemContent}
     </Link>
   );
 };
@@ -52,6 +101,7 @@ const NavItem = ({ icon: Icon, label, to, isActive, isCollapsed, onClick }: NavI
 const Sidebar = () => {
   const location = useLocation();
   const { toast } = useToast();
+  const { user } = useAuth();
   const isMobile = useIsMobile();
   const [collapsed, setCollapsed] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -60,17 +110,32 @@ const Sidebar = () => {
   useEffect(() => {
     setCollapsed(isMobile);
   }, [isMobile]);
+
+  // Store collapsed state in localStorage
+  useEffect(() => {
+    const savedState = localStorage.getItem('sidebarCollapsed');
+    if (savedState !== null && !isMobile) {
+      setCollapsed(savedState === 'true');
+    }
+  }, [isMobile]);
+  
+  // Save collapsed state when it changes
+  useEffect(() => {
+    localStorage.setItem('sidebarCollapsed', collapsed.toString());
+  }, [collapsed]);
   
   const navItems = [
     { id: "tasks", label: "Task List", icon: List, path: "/tasks", implemented: true },
     { id: "calendar", label: "Calendar", icon: Calendar, path: "/scheduler", implemented: true },
-    { id: "team", label: "Team", icon: Users, path: "/team", implemented: true },
+    { id: "team", label: "Team", icon: Users, path: "/team", implemented: true, notification: 2 },
     { id: "notes", label: "Notes", icon: FileText, path: "/notes", implemented: true },
     { id: "timer", label: "Timer", icon: Timer, path: "/timer", implemented: true },
     { id: "analytics", label: "Analytics", icon: FileChartColumn, path: "/analytics", implemented: true }
   ];
 
   const supportItems = [
+    { id: "profile", label: "Profile", icon: User, path: "/profile", implemented: true },
+    { id: "notifications", label: "Notifications", icon: BellRing, path: "/notifications", implemented: true, notification: 5 },
     { id: "settings", label: "Settings", icon: Settings, path: "/settings", implemented: true },
     { id: "help", label: "Help", icon: HelpCircle, path: "/help", implemented: false },
     { id: "contact", label: "Contact", icon: Mail, path: "/contact", implemented: true }
@@ -110,7 +175,7 @@ const Sidebar = () => {
             <div className="h-6 w-6 rounded-full bg-dincharya-primary/20 flex items-center justify-center">
               <Clock className="h-4 w-4 text-dincharya-primary" />
             </div>
-            Tasks
+            Dincharya
           </h1>
         )}
       </div>
@@ -134,6 +199,11 @@ const Sidebar = () => {
                 to={item.path}
                 isActive={isActive}
                 isCollapsed={isCollapsedCalc}
+                notification={item.notification}
+                onClick={!item.implemented ? () => toast({
+                  title: "Coming Soon",
+                  description: `The ${item.label} feature is under development`,
+                }) : undefined}
               />
             );
           })}
@@ -157,6 +227,7 @@ const Sidebar = () => {
                 to={item.path}
                 isActive={isActive}
                 isCollapsed={isCollapsedCalc}
+                notification={item.notification}
                 onClick={!item.implemented ? () => toast({
                   title: "Coming Soon",
                   description: `The ${item.label} feature is under development`,
@@ -169,16 +240,33 @@ const Sidebar = () => {
       
       {/* User Section */}
       <div className="p-3 border-t border-dincharya-muted/20">
-        <Button 
-          variant="outline" 
-          className={cn(
-            "w-full flex items-center justify-center gap-2", 
-            isCollapsedCalc && "px-0"
-          )}
-        >
-          <Users className="h-4 w-4" /> 
-          {!isCollapsedCalc && "Manage Team"}
-        </Button>
+        {user ? (
+          <Link to="/profile">
+            <Button 
+              variant="outline" 
+              className={cn(
+                "w-full flex items-center justify-center gap-2", 
+                isCollapsedCalc && "px-0"
+              )}
+            >
+              <User className="h-4 w-4" /> 
+              {!isCollapsedCalc && "My Profile"}
+            </Button>
+          </Link>
+        ) : (
+          <Link to="/auth">
+            <Button 
+              variant="outline" 
+              className={cn(
+                "w-full flex items-center justify-center gap-2", 
+                isCollapsedCalc && "px-0"
+              )}
+            >
+              <User className="h-4 w-4" /> 
+              {!isCollapsedCalc && "Sign In"}
+            </Button>
+          </Link>
+        )}
       </div>
     </div>
   );

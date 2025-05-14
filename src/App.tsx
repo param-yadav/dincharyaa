@@ -21,6 +21,8 @@ import SettingsPage from "./pages/SettingsPage";
 import SchedulerPage from "./pages/SchedulerPage";
 import NotesPage from "./pages/NotesPage";
 import TimerPage from "./pages/TimerPage";
+import ProfilePage from "./pages/ProfilePage";
+import NotificationsPage from "./pages/NotificationsPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -76,6 +78,16 @@ const App = () => (
             <Route path="/timer" element={
               <ProtectedRoute>
                 <Layout><TimerPage /></Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <Layout><ProfilePage /></Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/notifications" element={
+              <ProtectedRoute>
+                <Layout><NotificationsPage /></Layout>
               </ProtectedRoute>
             } />
             
