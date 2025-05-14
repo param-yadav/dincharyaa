@@ -154,18 +154,25 @@ const SchedulerPage = () => {
       
       // Create tasks for each day in the schedule if it's multi-day
       if (!isSameDay(startDate, endDate)) {
-        const { error: tasksError } = await supabase.rpc('create_tasks_from_schedule', {
-          schedule_id: data.id,
-          schedule_title: data.title
-        });
-        
-        if (tasksError) {
-          console.error('Error creating tasks from schedule:', tasksError);
-        } else {
-          toast({
-            title: "Tasks created",
-            description: "Tasks have been created for each day in the schedule",
-          });
+        try {
+          const { error: tasksError } = await supabase.rpc(
+            'create_tasks_from_schedule',
+            { 
+              schedule_id: data.id,
+              schedule_title: data.title
+            }
+          );
+          
+          if (tasksError) {
+            console.error('Error creating tasks from schedule:', tasksError);
+          } else {
+            toast({
+              title: "Tasks created",
+              description: "Tasks have been created for each day in the schedule",
+            });
+          }
+        } catch (err) {
+          console.error("Failed to call create_tasks_from_schedule function:", err);
         }
       }
       
