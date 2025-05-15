@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -133,27 +134,55 @@ const TeamPage = () => {
     }
     
     try {
-      // In a real app, you would:
-      // 1. Look up the user by email
-      // 2. Create an invitation record in the database
-      // 3. Send an email notification
-      
-      // For demo, create a pending invite
       try {
-  const { data, error } = await supabase
-    .from("team_invitations")
-    .insert([{ sender_id: user.id, recipient_email: email, role }]);
+        // First, find the user ID by email
+        const { data: recipientId, error: lookupError } = await supabase
+          .rpc("find_user_id_by_email", { email });
 
-  if (error) throw error;
+        if (lookupError) {
+          console.error("Error finding user:", lookupError);
+          toast({
+            title: "User not found",
+            description: "Could not find a user with that email address",
+            variant: "destructive"
+          });
+          return;
+        }
 
-  toast({ title: "Invitation sent", description: `An invite has been sent to ${email}` });
-  setEmail("");
-  setName("");
-  setRole("");
-} catch (error) {
-  console.error("Error inviting:", error);
-  toast({ title: "Failed to send", description: "Try again later.", variant: "destructive" });
-}
+        // Now create the team invitation with the found recipient_id
+        const { data, error } = await supabase
+          .from("team_invitations")
+          .insert({
+            sender_id: user.id,
+            recipient_id: recipientId,
+            role: role || "member",
+            status: "pending"
+          });
+
+        if (error) throw error;
+
+        toast({ title: "Invitation sent", description: `An invite has been sent to ${email}` });
+        setEmail("");
+        setName("");
+        setRole("");
+        
+        // Add to pending invites in the UI
+        const newInvite: PendingInvite = {
+          id: Date.now().toString(),
+          email: email,
+          role: role,
+          created_at: new Date().toISOString()
+        };
+        
+        setPendingInvites([...pendingInvites, newInvite]);
+      } catch (error) {
+        console.error("Error inviting:", error);
+        toast({ 
+          title: "Failed to send", 
+          description: "Try again later.", 
+          variant: "destructive" 
+        });
+      }
       
       // Create notification
       const savedNotifications = localStorage.getItem(`notifications_${user.id}`);
