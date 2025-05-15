@@ -310,31 +310,68 @@ const TimerPage = () => {
                     <span>Stopwatch</span>
                   </TabsTrigger>
                 </TabsList>
-              </Tabs>
-            </CardHeader>
-            
-            <CardContent>
-              <TabsContent value="timer" className="m-0">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="timer-duration">Duration (HH:MM:SS)</Label>
-                    <Input 
-                      id="timer-duration" 
-                      value={timerDuration}
-                      onChange={handleTimerInputChange}
-                      placeholder="00:25:00"
-                      className="text-lg text-center"
-                      disabled={timerRunning}
-                    />
+
+                <TabsContent value="timer" className="m-0">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="timer-duration">Duration (HH:MM:SS)</Label>
+                      <Input 
+                        id="timer-duration" 
+                        value={timerDuration}
+                        onChange={handleTimerInputChange}
+                        placeholder="00:25:00"
+                        className="text-lg text-center"
+                        disabled={timerRunning}
+                      />
+                    </div>
+                    
+                    <div className="flex flex-col items-center justify-center py-8">
+                      <div className="text-5xl font-bold mb-6">
+                        {formatTime(time)}
+                      </div>
+                      
+                      <div className="flex space-x-3">
+                        {!timerRunning ? (
+                          <Button 
+                            size="lg" 
+                            onClick={startTimer}
+                            className="bg-amber-600 hover:bg-amber-700"
+                          >
+                            <Play className="h-5 w-5 mr-2" />
+                            Start
+                          </Button>
+                        ) : (
+                          <Button 
+                            size="lg" 
+                            variant="outline" 
+                            onClick={pauseTimer}
+                          >
+                            <Pause className="h-5 w-5 mr-2" />
+                            Pause
+                          </Button>
+                        )}
+                        
+                        <Button 
+                          size="lg" 
+                          variant="outline" 
+                          onClick={resetTimer}
+                        >
+                          <RotateCcw className="h-5 w-5 mr-2" />
+                          Reset
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                  
-                  <div className="flex flex-col items-center justify-center py-8">
-                    <div className="text-5xl font-bold mb-6">
+                </TabsContent>
+                
+                <TabsContent value="stopwatch" className="m-0">
+                  <div className="flex flex-col items-center justify-center py-14">
+                    <div className="text-6xl font-bold mb-8">
                       {formatTime(time)}
                     </div>
                     
                     <div className="flex space-x-3">
-                      {!timerRunning ? (
+                      {!stopwatchRunning ? (
                         <Button 
                           size="lg" 
                           onClick={startTimer}
@@ -348,46 +385,6 @@ const TimerPage = () => {
                           size="lg" 
                           variant="outline" 
                           onClick={pauseTimer}
-                        >
-                          <Pause className="h-5 w-5 mr-2" />
-                          Pause
-                        </Button>
-                      )}
-                      
-                      <Button 
-                        size="lg" 
-                        variant="outline" 
-                        onClick={resetTimer}
-                      >
-                        <RotateCcw className="h-5 w-5 mr-2" />
-                        Reset
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="stopwatch" className="m-0">
-                <div className="flex flex-col items-center justify-center py-14">
-                  <div className="text-6xl font-bold mb-8">
-                    {formatTime(time)}
-                  </div>
-                  
-                  <div className="flex space-x-3">
-                    {!stopwatchRunning ? (
-                      <Button 
-                        size="lg" 
-                        onClick={startTimer}
-                        className="bg-amber-600 hover:bg-amber-700"
-                      >
-                        <Play className="h-5 w-5 mr-2" />
-                        Start
-                      </Button>
-                    ) : (
-                      <Button 
-                        size="lg" 
-                        variant="outline" 
-                        onClick={pauseTimer}
                       >
                         <Pause className="h-5 w-5 mr-2" />
                         Pause
@@ -405,47 +402,47 @@ const TimerPage = () => {
                   </div>
                 </div>
               </TabsContent>
-            </CardContent>
+            </Tabs>
+          </CardHeader>
+          
+          <CardFooter className="flex flex-col">
+            <Separator className="mb-4" />
             
-            <CardFooter className="flex flex-col">
-              <Separator className="mb-4" />
+            <div className="w-full space-y-3">
+              <Label htmlFor="timer-notes">Notes (optional)</Label>
+              <Textarea 
+                id="timer-notes" 
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="What are you timing? Add notes here..."
+                rows={3}
+              />
               
-              <div className="w-full space-y-3">
-                <Label htmlFor="timer-notes">Notes (optional)</Label>
-                <Textarea 
-                  id="timer-notes" 
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="What are you timing? Add notes here..."
-                  rows={3}
-                />
-                
-                <Button 
-                  className="w-full bg-amber-600 hover:bg-amber-700"
-                  onClick={saveSession}
-                  disabled={saving || time === 0}
-                >
-                  {saving ? (
-                    <>
-                      <Clock className="h-4 w-4 mr-2 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="h-4 w-4 mr-2" />
-                      Save Session
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardFooter>
-          </Card>
-        </div>
-        
-        {/* History Card */}
-        <div className="md:col-span-1">
-          <TimerHistory />
-        </div>
+              <Button 
+                className="w-full bg-amber-600 hover:bg-amber-700"
+                onClick={saveSession}
+                disabled={saving || time === 0}
+              >
+                {saving ? (
+                  <>
+                    <Clock className="h-4 w-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Session
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardFooter>
+        </Card>
+      </div>
+      
+      {/* History Card */}
+      <div className="md:col-span-1">
+        <TimerHistory />
       </div>
     </div>
   );
