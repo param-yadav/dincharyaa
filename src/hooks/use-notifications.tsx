@@ -41,7 +41,7 @@ export function useNotifications() {
           
         if (error) throw error;
         
-        setNotifications(data);
+        setNotifications(data as Notification[]);
         
         // Calculate unread count
         const unread = data.filter(notification => !notification.read).length;

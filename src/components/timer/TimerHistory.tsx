@@ -43,7 +43,7 @@ export function TimerHistory() {
         
       if (error) throw error;
       
-      setSessions(data || []);
+      setSessions(data as TimerSession[] || []);
     } catch (error) {
       console.error("Error fetching timer sessions:", error);
     } finally {
