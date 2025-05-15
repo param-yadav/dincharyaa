@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { BellRing, Check, Clock, Calendar, FileText, Users, User } from "lucide-react";
+import { BellRing, Check, Clock, Calendar, FileText, Users, User, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, formatDistanceToNow } from "date-fns";
 import { useAuth } from "@/hooks/use-auth";
@@ -33,63 +33,97 @@ const NotificationsPage = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | null>(null);
 
-  // Mock notifications data
+  // Fetch notifications from Supabase or local storage
   useEffect(() => {
-    const mockNotifications: Notification[] = [
-      {
-        id: "1",
-        title: "New Team Member",
-        message: "John Doe has joined your team",
-        created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 minutes ago
-        read: false,
-        type: "team",
-        action_url: "/team"
-      },
-      {
-        id: "2",
-        title: "Task Reminder",
-        message: "Your task 'Project Submission' is due tomorrow",
-        created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
-        read: false,
-        type: "task",
-        source_id: "task-123",
-        action_url: "/tasks"
-      },
-      {
-        id: "3",
-        title: "Schedule Updated",
-        message: "Weekly Team Meeting has been rescheduled to Friday",
-        created_at: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), // 5 hours ago
-        read: false,
-        type: "schedule",
-        source_id: "schedule-456",
-        action_url: "/scheduler"
-      },
-      {
-        id: "4",
-        title: "Profile Completed",
-        message: "You've successfully updated your profile",
-        created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
-        read: true,
-        type: "system",
-        action_url: "/profile"
-      },
-      {
-        id: "5",
-        title: "Task Assigned",
-        message: "Alex has assigned you a new task: 'Design Review'",
-        created_at: new Date(Date.now() - 1000 * 60 * 60 * 30).toISOString(), // 30 hours ago
-        read: true,
-        type: "task",
-        source_id: "task-789",
-        action_url: "/tasks"
+    // Check browser notification permission
+    if ('Notification' in window) {
+      setNotificationPermission(Notification.permission);
+    }
+
+    const fetchNotifications = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
       }
-    ];
+
+      try {
+        // Try to load from localStorage first
+        const savedNotifications = localStorage.getItem(`notifications_${user.id}`);
+        if (savedNotifications) {
+          setNotifications(JSON.parse(savedNotifications));
+        }
+
+        // In a real app, you would fetch from Supabase here
+        // const { data, error } = await supabase
+        //   .from('notifications')
+        //   .select('*')
+        //   .eq('user_id', user.id)
+        //   .order('created_at', { ascending: false });
+        
+        // if (error) throw error;
+        // if (data) setNotifications(data);
+
+        // For now, use mock data if no saved notifications
+        if (!savedNotifications) {
+          const mockNotifications: Notification[] = [
+            {
+              id: "1",
+              title: "New Team Member",
+              message: "John Doe has joined your team",
+              created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 minutes ago
+              read: false,
+              type: "team",
+              action_url: "/team"
+            },
+            {
+              id: "2",
+              title: "Task Reminder",
+              message: "Your task 'Project Submission' is due tomorrow",
+              created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
+              read: false,
+              type: "task",
+              source_id: "task-123",
+              action_url: "/tasks"
+            },
+            {
+              id: "3",
+              title: "Schedule Updated",
+              message: "Weekly Team Meeting has been rescheduled to Friday",
+              created_at: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), // 5 hours ago
+              read: false,
+              type: "schedule",
+              source_id: "schedule-456",
+              action_url: "/scheduler"
+            }
+          ];
+          
+          setNotifications(mockNotifications);
+          // Save to localStorage
+          localStorage.setItem(`notifications_${user.id}`, JSON.stringify(mockNotifications));
+        }
+      } catch (error) {
+        console.error("Error fetching notifications:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch notifications",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
     
-    setNotifications(mockNotifications);
-    setLoading(false);
-  }, []);
+    fetchNotifications();
+  }, [user]);
+
+  // Save notifications to localStorage when they change
+  useEffect(() => {
+    if (user && notifications.length > 0) {
+      localStorage.setItem(`notifications_${user.id}`, JSON.stringify(notifications));
+    }
+  }, [notifications, user]);
 
   const filteredNotifications = activeTab === "all" 
     ? notifications 
@@ -115,6 +149,42 @@ const NotificationsPage = () => {
       title: "All notifications read",
       description: "All notifications have been marked as read"
     });
+  };
+
+  const requestNotificationPermission = async () => {
+    if (!('Notification' in window)) {
+      toast({
+        title: "Notifications not supported",
+        description: "Your browser doesn't support notifications",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const permission = await Notification.requestPermission();
+      setNotificationPermission(permission);
+      
+      if (permission === 'granted') {
+        toast({
+          title: "Notifications enabled",
+          description: "You will now receive notifications"
+        });
+        
+        // Show a test notification
+        new Notification("Notifications Enabled", {
+          body: "You will now receive notifications from Dincharya",
+          icon: "/favicon.ico"
+        });
+      }
+    } catch (error) {
+      console.error("Error requesting notification permission:", error);
+      toast({
+        title: "Permission error",
+        description: "Failed to request notification permission",
+        variant: "destructive"
+      });
+    }
   };
 
   const getNotificationIcon = (type: string) => {
@@ -152,6 +222,24 @@ const NotificationsPage = () => {
           </span>
         )}
       </h1>
+      
+      {notificationPermission !== 'granted' && (
+        <Card className="mb-6 bg-blue-50 dark:bg-blue-900/10 border-blue-200">
+          <CardContent className="flex items-center justify-between py-4">
+            <div className="flex items-center">
+              <Bell className="h-5 w-5 text-blue-500 mr-2" />
+              <p className="text-sm">Enable browser notifications to stay updated</p>
+            </div>
+            <Button 
+              variant="outline" 
+              className="border-blue-300 hover:bg-blue-100"
+              onClick={requestNotificationPermission}
+            >
+              Enable Notifications
+            </Button>
+          </CardContent>
+        </Card>
+      )}
       
       <Card className="bg-white dark:bg-dincharya-text/80 rounded-lg overflow-hidden shadow">
         <CardHeader className="bg-amber-50 dark:bg-amber-900/10">

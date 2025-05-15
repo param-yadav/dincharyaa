@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Mail, UserPlus } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TeamMember {
   id: string;
@@ -21,53 +23,74 @@ interface TeamMember {
   tasksCompleted: number;
 }
 
-// Sample team members data
-const teamMembers: TeamMember[] = [
-  {
-    id: "1",
-    name: "Jane Smith",
-    email: "jane@example.com",
-    role: "Product Manager",
-    tasksAssigned: 8,
-    tasksCompleted: 5,
-    avatar: "https://i.pravatar.cc/150?img=1"
-  },
-  {
-    id: "2",
-    name: "John Doe",
-    email: "john@example.com",
-    role: "Developer",
-    tasksAssigned: 12,
-    tasksCompleted: 9,
-    avatar: "https://i.pravatar.cc/150?img=2"
-  },
-  {
-    id: "3",
-    name: "Sarah Johnson",
-    email: "sarah@example.com",
-    role: "Designer",
-    tasksAssigned: 6,
-    tasksCompleted: 6,
-    avatar: "https://i.pravatar.cc/150?img=3"
-  },
-  {
-    id: "4",
-    name: "Michael Brown",
-    email: "michael@example.com",
-    role: "Marketing",
-    tasksAssigned: 5,
-    tasksCompleted: 3,
-    avatar: "https://i.pravatar.cc/150?img=4"
-  }
-];
+interface PendingInvite {
+  id: string;
+  email: string;
+  name?: string;
+  role?: string;
+  created_at: string;
+}
 
 const TeamPage = () => {
-  const [members] = useState<TeamMember[]>(teamMembers);
+  const { user } = useAuth();
+  const [members, setMembers] = useState<TeamMember[]>([]);
+  const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([]);
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [role, setRole] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  const handleInvite = () => {
+  // Fetch team members
+  useEffect(() => {
+    if (!user) return;
+    
+    // For now, use localStorage to store team members and invites
+    // In a real app, you would fetch from Supabase
+    const savedMembers = localStorage.getItem(`team_members_${user.id}`);
+    const savedInvites = localStorage.getItem(`team_invites_${user.id}`);
+    
+    if (savedMembers) {
+      setMembers(JSON.parse(savedMembers));
+    } else {
+      // Default demo team member (just the current user)
+      const currentUser: TeamMember = {
+        id: user.id,
+        name: user.email?.split('@')[0] || 'Current User',
+        email: user.email || '',
+        role: 'Owner',
+        tasksAssigned: 0,
+        tasksCompleted: 0
+      };
+      
+      setMembers([currentUser]);
+      localStorage.setItem(`team_members_${user.id}`, JSON.stringify([currentUser]));
+    }
+    
+    if (savedInvites) {
+      setPendingInvites(JSON.parse(savedInvites));
+    }
+    
+    setLoading(false);
+  }, [user]);
+
+  // Save changes to localStorage
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem(`team_members_${user.id}`, JSON.stringify(members));
+      localStorage.setItem(`team_invites_${user.id}`, JSON.stringify(pendingInvites));
+    }
+  }, [members, pendingInvites, user]);
+
+  const handleInvite = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to invite team members",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!email) {
       toast({
         title: "Email required",
@@ -77,15 +100,106 @@ const TeamPage = () => {
       return;
     }
     
-    toast({
-      title: "Invitation sent",
-      description: `An invitation has been sent to ${email}`
-    });
+    // Check if email is already a team member
+    if (members.some(member => member.email.toLowerCase() === email.toLowerCase())) {
+      toast({
+        title: "Already a member",
+        description: "This person is already part of your team",
+        variant: "destructive"
+      });
+      return;
+    }
     
-    setEmail('');
-    setName('');
-    setRole('');
+    // Check if already invited
+    if (pendingInvites.some(invite => invite.email.toLowerCase() === email.toLowerCase())) {
+      toast({
+        title: "Already invited",
+        description: "This person has already been invited",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Check if user exists (in a real app, this would query the database)
+    // For demo purposes, we'll simulate with a check for valid email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast({
+        title: "Invalid email",
+        description: "Please enter a valid email address",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      // In a real app, you would:
+      // 1. Look up the user by email
+      // 2. Create an invitation record in the database
+      // 3. Send an email notification
+      
+      // For demo, create a pending invite
+      const newInvite: PendingInvite = {
+        id: Date.now().toString(),
+        email: email,
+        name: name || undefined,
+        role: role || undefined,
+        created_at: new Date().toISOString()
+      };
+      
+      setPendingInvites([...pendingInvites, newInvite]);
+      
+      // Create notification
+      const savedNotifications = localStorage.getItem(`notifications_${user.id}`);
+      let notifications = savedNotifications ? JSON.parse(savedNotifications) : [];
+      
+      notifications.unshift({
+        id: Date.now().toString(),
+        title: "Team Invitation Sent",
+        message: `You've invited ${email} to join your team`,
+        created_at: new Date().toISOString(),
+        read: false,
+        type: "team"
+      });
+      
+      localStorage.setItem(`notifications_${user.id}`, JSON.stringify(notifications));
+      
+      toast({
+        title: "Invitation sent",
+        description: `An invitation has been sent to ${email}`
+      });
+      
+      setEmail('');
+      setName('');
+      setRole('');
+    } catch (error) {
+      console.error('Error inviting team member:', error);
+      toast({
+        title: "Failed to send invitation",
+        description: "Please try again later",
+        variant: "destructive"
+      });
+    }
   };
+  
+  const cancelInvitation = (inviteId: string) => {
+    setPendingInvites(pendingInvites.filter(invite => invite.id !== inviteId));
+    toast({
+      title: "Invitation cancelled",
+      description: "The invitation has been cancelled"
+    });
+  };
+
+  if (!user) {
+    return (
+      <div className="flex justify-center items-center h-[60vh]">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Authentication Required</h1>
+          <p className="mb-6">Please sign in to manage your team</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -164,8 +278,8 @@ const TeamPage = () => {
       
       <Tabs defaultValue="members">
         <TabsList>
-          <TabsTrigger value="members">Members</TabsTrigger>
-          <TabsTrigger value="pending">Pending Invites</TabsTrigger>
+          <TabsTrigger value="members">Members ({members.length})</TabsTrigger>
+          <TabsTrigger value="pending">Pending Invites ({pendingInvites.length})</TabsTrigger>
         </TabsList>
         
         <TabsContent value="members" className="mt-6">
@@ -187,7 +301,9 @@ const TeamPage = () => {
                 <CardContent>
                   <div className="flex justify-between items-center mb-2">
                     <Badge variant="outline">{member.role}</Badge>
-                    <span className="text-xs text-muted-foreground">Member</span>
+                    <span className="text-xs text-muted-foreground">
+                      {member.id === user.id ? "You" : "Member"}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm mt-4">
                     <div>
@@ -289,19 +405,118 @@ const TeamPage = () => {
         </TabsContent>
         
         <TabsContent value="pending" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Pending Invitations</CardTitle>
-              <CardDescription>
-                Team members who have been invited but haven't joined yet
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                No pending invitations
-              </div>
-            </CardContent>
-          </Card>
+          {pendingInvites.length > 0 ? (
+            <div className="space-y-4">
+              {pendingInvites.map((invite) => (
+                <Card key={invite.id} className="bg-amber-50 dark:bg-amber-900/10">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-start space-x-4">
+                        <div className="rounded-full p-2 bg-amber-100">
+                          <Mail className="h-5 w-5 text-amber-600" />
+                        </div>
+                        <div>
+                          <h4 className="text-base font-medium">{invite.email}</h4>
+                          {invite.name && <p className="text-sm text-muted-foreground">{invite.name}</p>}
+                          {invite.role && (
+                            <Badge variant="outline" className="mt-1">
+                              {invite.role}
+                            </Badge>
+                          )}
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Invited {formatDistanceToNow(new Date(invite.created_at), { addSuffix: true })}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-amber-300 hover:bg-amber-100 text-amber-700"
+                        onClick={() => cancelInvitation(invite.id)}
+                      >
+                        Cancel Invitation
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="p-6">
+                <div className="text-center py-8 text-muted-foreground">
+                  <div className="rounded-full bg-amber-100 p-6 mb-4 mx-auto w-fit">
+                    <Mail className="h-6 w-6 text-amber-600" />
+                  </div>
+                  <h3 className="text-lg font-medium mb-1">No pending invitations</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Invite team members to get started
+                  </p>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button>Invite Someone</Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Invite Team Member</DialogTitle>
+                        <DialogDescription>
+                          Invite a new member to join your team
+                        </DialogDescription>
+                      </DialogHeader>
+                      
+                      <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="pending-email" className="text-right">
+                            Email
+                          </Label>
+                          <Input
+                            id="pending-email"
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="member@example.com"
+                            className="col-span-3"
+                          />
+                        </div>
+                        
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="pending-name" className="text-right">
+                            Name
+                          </Label>
+                          <Input
+                            id="pending-name"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            placeholder="John Doe"
+                            className="col-span-3"
+                          />
+                        </div>
+                        
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="pending-role" className="text-right">
+                            Role
+                          </Label>
+                          <Input
+                            id="pending-role"
+                            value={role}
+                            onChange={(e) => setRole(e.target.value)}
+                            placeholder="Developer"
+                            className="col-span-3"
+                          />
+                        </div>
+                      </div>
+                      
+                      <DialogFooter>
+                        <Button type="button" onClick={handleInvite}>
+                          Send Invitation
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
     </div>
