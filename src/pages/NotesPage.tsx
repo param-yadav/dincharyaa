@@ -11,6 +11,9 @@ import { format } from "date-fns";
 import { FileText, Plus, Search, Edit, Trash2 } from "lucide-react";
 import { NoteEditor } from "@/components/notes/NoteEditor";
 import ReactMarkdown from 'react-markdown';
+import { Database } from "@/integrations/supabase/types";
+
+type NotesRow = Database['public']['Tables']['notes']['Row'];
 
 interface Note {
   id: string;
@@ -88,7 +91,7 @@ const NotesPage = () => {
         
       if (error) throw error;
       
-      setNotes([data, ...notes]);
+      setNotes([data as Note, ...notes]);
       setCreateDialogOpen(false);
       
       toast({
@@ -128,7 +131,7 @@ const NotesPage = () => {
       if (error) throw error;
       
       setNotes(notes.map(note => 
-        note.id === data.id ? data : note
+        note.id === data.id ? data as Note : note
       ));
       
       setEditDialogOpen(false);
@@ -374,6 +377,7 @@ const NotesPage = () => {
               <NoteEditor 
                 initialTitle={selectedNote.title}
                 initialContent={selectedNote.content}
+                initialTags={selectedNote.tags || []}
                 onSave={handleUpdateNote}
                 loading={saving}
               />

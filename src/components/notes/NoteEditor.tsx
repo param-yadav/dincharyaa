@@ -10,14 +10,21 @@ import { Loader2, Save, Bold, Italic, Underline, List, ListOrdered, Heading1, He
 interface NoteEditorProps {
   initialTitle?: string;
   initialContent?: string;
+  initialTags?: string[];
   onSave: (title: string, content: string, tags: string[]) => Promise<void>;
   loading?: boolean;
 }
 
-export function NoteEditor({ initialTitle = "", initialContent = "", onSave, loading = false }: NoteEditorProps) {
+export function NoteEditor({ 
+  initialTitle = "", 
+  initialContent = "", 
+  initialTags = [],
+  onSave, 
+  loading = false 
+}: NoteEditorProps) {
   const [title, setTitle] = useState(initialTitle);
   const [content, setContent] = useState(initialContent);
-  const [tags, setTags] = useState<string[]>([]);
+  const [tags, setTags] = useState<string[]>(initialTags);
   const [newTag, setNewTag] = useState("");
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
 
