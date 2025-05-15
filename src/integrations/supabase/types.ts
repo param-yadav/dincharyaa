@@ -110,9 +110,12 @@ export type Database = {
       }
       schedules: {
         Row: {
+          category: string | null
+          color: string | null
           created_at: string | null
           date_from: string
           date_to: string
+          description: string | null
           id: string
           is_all_day: boolean | null
           title: string
@@ -120,9 +123,12 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          category?: string | null
+          color?: string | null
           created_at?: string | null
           date_from: string
           date_to: string
+          description?: string | null
           id?: string
           is_all_day?: boolean | null
           title: string
@@ -130,9 +136,12 @@ export type Database = {
           user_id: string
         }
         Update: {
+          category?: string | null
+          color?: string | null
           created_at?: string | null
           date_from?: string
           date_to?: string
+          description?: string | null
           id?: string
           is_all_day?: boolean | null
           title?: string
