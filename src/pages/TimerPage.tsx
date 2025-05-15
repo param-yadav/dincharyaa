@@ -1,234 +1,451 @@
-
 import { useState, useEffect, useRef } from "react";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PlayCircle, PauseCircle, RefreshCcw, Clock, Watch } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
+import { Play, Pause, RotateCcw, Clock, Timer as TimerIcon, Save } from "lucide-react";
+import { TimerHistory } from "@/components/timer/TimerHistory";
 
 const TimerPage = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("timer");
-  const [timerTime, setTimerTime] = useState<number>(25 * 60); // 25 minutes in seconds
-  const [timerRunning, setTimerRunning] = useState<boolean>(false);
-  const [timerRemaining, setTimerRemaining] = useState<number>(25 * 60);
+  const [timerRunning, setTimerRunning] = useState(false);
+  const [stopwatchRunning, setStopwatchRunning] = useState(false);
+  const [time, setTime] = useState(0); // seconds
+  const [timerDuration, setTimerDuration] = useState(""); // HH:MM:SS format
+  const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
   
-  const [stopwatchTime, setStopwatchTime] = useState<number>(0);
-  const [stopwatchRunning, setStopwatchRunning] = useState<boolean>(false);
+  const intervalRef = useRef<number | null>(null);
+  const startTimeRef = useRef<number | null>(null);
   
-  const timerInterval = useRef<number | null>(null);
-  const stopwatchInterval = useRef<number | null>(null);
-  
-  const formatTime = (totalSeconds: number) => {
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-    
-    return `${hours > 0 ? `${hours.toString().padStart(2, '0')}:` : ''}${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  };
-  
-  const handleTimerStart = () => {
-    if (timerRunning) return;
-    
-    setTimerRunning(true);
-    timerInterval.current = window.setInterval(() => {
-      setTimerRemaining(prev => {
-        if (prev <= 1) {
-          clearInterval(timerInterval.current!);
-          setTimerRunning(false);
-          toast({
-            title: "Timer Completed",
-            description: "Your timer has finished!"
-          });
-          return 0;
-        }
-        return prev - 1;
+  // Handle tab change
+  const handleTabChange = (value: string) => {
+    if (timerRunning || stopwatchRunning) {
+      toast({
+        title: "Timer is running",
+        description: "Please stop the current timer before switching tabs",
+        variant: "destructive"
       });
-    }, 1000);
-  };
-  
-  const handleTimerPause = () => {
-    if (!timerRunning) return;
+      return;
+    }
     
-    clearInterval(timerInterval.current!);
-    setTimerRunning(false);
+    setActiveTab(value);
+    resetTimer();
   };
   
-  const handleTimerReset = () => {
-    clearInterval(timerInterval.current!);
-    setTimerRunning(false);
-    setTimerRemaining(timerTime);
-  };
-  
-  const handleTimerChange = (minutes: number) => {
-    const newTime = minutes * 60;
-    setTimerTime(newTime);
-    setTimerRemaining(newTime);
+  // Parse timer input to seconds
+  const parseTimerInput = () => {
+    const parts = timerDuration.split(":");
+    let seconds = 0;
     
-    // If timer is running, reset it
-    if (timerRunning) {
-      clearInterval(timerInterval.current!);
-      setTimerRunning(false);
+    if (parts.length === 3) {
+      // HH:MM:SS
+      seconds = 
+        parseInt(parts[0], 10) * 3600 + 
+        parseInt(parts[1], 10) * 60 + 
+        parseInt(parts[2], 10);
+    } else if (parts.length === 2) {
+      // MM:SS
+      seconds = parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+    } else {
+      // SS
+      seconds = parseInt(parts[0], 10);
+    }
+    
+    return isNaN(seconds) ? 0 : seconds;
+  };
+  
+  // Format seconds to HH:MM:SS
+  const formatTime = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+    
+    return [
+      hours.toString().padStart(2, '0'),
+      minutes.toString().padStart(2, '0'),
+      secs.toString().padStart(2, '0')
+    ].join(':');
+  };
+  
+  // Start timer
+  const startTimer = () => {
+    if (activeTab === "timer") {
+      const duration = parseTimerInput();
+      if (duration <= 0) {
+        toast({
+          title: "Invalid duration",
+          description: "Please set a valid timer duration",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      setTime(duration);
+      setTimerRunning(true);
+      
+      const endTime = Date.now() + duration * 1000;
+      
+      intervalRef.current = window.setInterval(() => {
+        const remaining = Math.max(0, Math.round((endTime - Date.now()) / 1000));
+        setTime(remaining);
+        
+        if (remaining <= 0) {
+          clearInterval(intervalRef.current!);
+          setTimerRunning(false);
+          
+          // Play notification sound
+          const audio = new Audio("/notification.mp3");
+          audio.play().catch(e => console.error("Error playing sound:", e));
+          
+          // Show browser notification
+          if ("Notification" in window && Notification.permission === "granted") {
+            new Notification("Timer Completed", {
+              body: "Your timer has finished!",
+              icon: "/favicon.ico"
+            });
+          }
+          
+          toast({
+            title: "Timer completed!",
+            description: "Your timer has finished"
+          });
+        }
+      }, 100);
+    } else {
+      // Stopwatch
+      setStopwatchRunning(true);
+      startTimeRef.current = Date.now() - time * 1000; // Account for paused time
+      
+      intervalRef.current = window.setInterval(() => {
+        setTime(Math.floor((Date.now() - startTimeRef.current!) / 1000));
+      }, 100);
     }
   };
   
-  const handleStopwatchStart = () => {
-    if (stopwatchRunning) return;
+  // Pause timer
+  const pauseTimer = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
     
-    setStopwatchRunning(true);
-    stopwatchInterval.current = window.setInterval(() => {
-      setStopwatchTime(prev => prev + 1);
-    }, 1000);
+    if (activeTab === "timer") {
+      setTimerRunning(false);
+    } else {
+      setStopwatchRunning(false);
+    }
   };
   
-  const handleStopwatchPause = () => {
-    if (!stopwatchRunning) return;
+  // Reset timer
+  const resetTimer = () => {
+    pauseTimer();
     
-    clearInterval(stopwatchInterval.current!);
-    setStopwatchRunning(false);
+    if (activeTab === "timer") {
+      setTime(parseTimerInput());
+    } else {
+      setTime(0);
+    }
+    
+    startTimeRef.current = null;
   };
   
-  const handleStopwatchReset = () => {
-    clearInterval(stopwatchInterval.current!);
-    setStopwatchRunning(false);
-    setStopwatchTime(0);
+  // Handle timer input change
+  const handleTimerInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let input = e.target.value;
+    
+    // Only allow digits and colons
+    input = input.replace(/[^\d:]/g, '');
+    
+    // Format input as HH:MM:SS
+    const parts = input.split(':');
+    let formatted = "";
+    
+    if (parts.length > 3) {
+      // Too many parts, ignore extras
+      formatted = parts.slice(0, 3).join(':');
+    } else if (parts.length === 3) {
+      // HH:MM:SS
+      const hours = parts[0].slice(0, 2).padStart(2, '0');
+      const minutes = parts[1].slice(0, 2).padStart(2, '0');
+      const seconds = parts[2].slice(0, 2).padStart(2, '0');
+      formatted = `${hours}:${minutes}:${seconds}`;
+    } else if (parts.length === 2) {
+      // MM:SS
+      const minutes = parts[0].slice(0, 2).padStart(2, '0');
+      const seconds = parts[1].slice(0, 2).padStart(2, '0');
+      formatted = `${minutes}:${seconds}`;
+    } else {
+      // SS
+      formatted = parts[0].slice(0, 2);
+    }
+    
+    setTimerDuration(formatted);
   };
   
-  // Clean up intervals when component unmounts
+  // Save timer session to database
+  const saveSession = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to save your timer session",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (time <= 0) {
+      toast({
+        title: "No time recorded",
+        description: "Please use the timer before saving a session",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      setSaving(true);
+      
+      const { data, error } = await supabase
+        .from('timer_sessions')
+        .insert({
+          user_id: user.id,
+          duration: time,
+          type: activeTab,
+          notes: notes.trim() || null
+        })
+        .select()
+        .single();
+        
+      if (error) throw error;
+      
+      toast({
+        title: "Session saved",
+        description: "Your timer session has been saved"
+      });
+      
+      // Reset notes but keep the timer as is
+      setNotes("");
+    } catch (error) {
+      console.error("Error saving timer session:", error);
+      toast({
+        title: "Failed to save session",
+        description: "There was an error saving your timer session",
+        variant: "destructive"
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+  
+  // Request notification permission
+  useEffect(() => {
+    if ("Notification" in window && Notification.permission === "default") {
+      toast({
+        title: "Enable notifications",
+        description: "Allow notifications to be alerted when your timer completes",
+        action: (
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              Notification.requestPermission().then(result => {
+                if (result === "granted") {
+                  toast({
+                    title: "Notifications enabled",
+                    description: "You'll receive alerts when your timer completes"
+                  });
+                }
+              });
+            }}
+          >
+            Allow
+          </Button>
+        )
+      });
+    }
+  }, [toast]);
+
+  // Set up the timer value when component mounts
+  useEffect(() => {
+    setTime(parseTimerInput());
+  }, [timerDuration]);
+  
+  // Cleanup interval on unmount
   useEffect(() => {
     return () => {
-      if (timerInterval.current) clearInterval(timerInterval.current);
-      if (stopwatchInterval.current) clearInterval(stopwatchInterval.current);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
     };
   }, []);
-  
+
   return (
-    <div>
-      <h1 className="text-3xl font-bold text-dincharya-text dark:text-white mb-6">Time Tools</h1>
+    <div className="container mx-auto py-8 px-4">
+      <h1 className="text-3xl font-bold mb-6">Timer & Stopwatch</h1>
       
-      <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid grid-cols-2 w-full max-w-md mx-auto">
-          <TabsTrigger value="timer" className="flex gap-2 items-center">
-            <Clock className="h-4 w-4" />
-            <span>Timer</span>
-          </TabsTrigger>
-          <TabsTrigger value="stopwatch" className="flex gap-2 items-center">
-            <Watch className="h-4 w-4" />
-            <span>Stopwatch</span>
-          </TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="timer" className="mt-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Timer/Stopwatch Card */}
+        <div className="md:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>Countdown Timer</CardTitle>
-              <CardDescription>
-                Set a timer for focused work or breaks
-              </CardDescription>
+              <Tabs 
+                value={activeTab} 
+                onValueChange={handleTabChange} 
+                className="w-full"
+              >
+                <TabsList className="grid grid-cols-2">
+                  <TabsTrigger value="timer" className="flex items-center space-x-2">
+                    <TimerIcon className="h-4 w-4" />
+                    <span>Timer</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="stopwatch" className="flex items-center space-x-2">
+                    <Clock className="h-4 w-4" />
+                    <span>Stopwatch</span>
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex flex-col items-center">
-                <div className="text-6xl font-bold mb-8">
-                  {formatTime(timerRemaining)}
+            
+            <CardContent>
+              <TabsContent value="timer" className="m-0">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="timer-duration">Duration (HH:MM:SS)</Label>
+                    <Input 
+                      id="timer-duration" 
+                      value={timerDuration}
+                      onChange={handleTimerInputChange}
+                      placeholder="00:25:00"
+                      className="text-lg text-center"
+                      disabled={timerRunning}
+                    />
+                  </div>
+                  
+                  <div className="flex flex-col items-center justify-center py-8">
+                    <div className="text-5xl font-bold mb-6">
+                      {formatTime(time)}
+                    </div>
+                    
+                    <div className="flex space-x-3">
+                      {!timerRunning ? (
+                        <Button 
+                          size="lg" 
+                          onClick={startTimer}
+                          className="bg-amber-600 hover:bg-amber-700"
+                        >
+                          <Play className="h-5 w-5 mr-2" />
+                          Start
+                        </Button>
+                      ) : (
+                        <Button 
+                          size="lg" 
+                          variant="outline" 
+                          onClick={pauseTimer}
+                        >
+                          <Pause className="h-5 w-5 mr-2" />
+                          Pause
+                        </Button>
+                      )}
+                      
+                      <Button 
+                        size="lg" 
+                        variant="outline" 
+                        onClick={resetTimer}
+                      >
+                        <RotateCcw className="h-5 w-5 mr-2" />
+                        Reset
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-                
-                <div className="flex gap-4">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => handleTimerChange(5)}
-                    className={timerTime === 5 * 60 ? "bg-primary/20" : ""}
-                  >
-                    5m
-                  </Button>
-                  <Button 
-                    variant="outline"
-                    onClick={() => handleTimerChange(15)}
-                    className={timerTime === 15 * 60 ? "bg-primary/20" : ""}
-                  >
-                    15m
-                  </Button>
-                  <Button 
-                    variant="outline"
-                    onClick={() => handleTimerChange(25)}
-                    className={timerTime === 25 * 60 ? "bg-primary/20" : ""}
-                  >
-                    25m
-                  </Button>
-                  <Button 
-                    variant="outline"
-                    onClick={() => handleTimerChange(50)}
-                    className={timerTime === 50 * 60 ? "bg-primary/20" : ""}
-                  >
-                    50m
-                  </Button>
+              </TabsContent>
+              
+              <TabsContent value="stopwatch" className="m-0">
+                <div className="flex flex-col items-center justify-center py-14">
+                  <div className="text-6xl font-bold mb-8">
+                    {formatTime(time)}
+                  </div>
+                  
+                  <div className="flex space-x-3">
+                    {!stopwatchRunning ? (
+                      <Button 
+                        size="lg" 
+                        onClick={startTimer}
+                        className="bg-amber-600 hover:bg-amber-700"
+                      >
+                        <Play className="h-5 w-5 mr-2" />
+                        Start
+                      </Button>
+                    ) : (
+                      <Button 
+                        size="lg" 
+                        variant="outline" 
+                        onClick={pauseTimer}
+                      >
+                        <Pause className="h-5 w-5 mr-2" />
+                        Pause
+                      </Button>
+                    )}
+                    
+                    <Button 
+                      size="lg" 
+                      variant="outline" 
+                      onClick={resetTimer}
+                    >
+                      <RotateCcw className="h-5 w-5 mr-2" />
+                      Reset
+                    </Button>
+                  </div>
                 </div>
-                
-                <div className="mt-6 flex items-center gap-2">
-                  <Input
-                    type="number"
-                    min="1"
-                    max="180"
-                    className="w-24"
-                    placeholder="Custom"
-                    onChange={(e) => handleTimerChange(parseInt(e.target.value) || 25)}
-                  />
-                  <span className="text-sm text-muted-foreground">minutes</span>
-                </div>
-              </div>
+              </TabsContent>
             </CardContent>
-            <CardFooter className="flex justify-center gap-4">
-              {!timerRunning ? (
-                <Button onClick={handleTimerStart} className="gap-2" disabled={timerRemaining === 0}>
-                  <PlayCircle className="h-5 w-5" />
-                  Start
+            
+            <CardFooter className="flex flex-col">
+              <Separator className="mb-4" />
+              
+              <div className="w-full space-y-3">
+                <Label htmlFor="timer-notes">Notes (optional)</Label>
+                <Textarea 
+                  id="timer-notes" 
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="What are you timing? Add notes here..."
+                  rows={3}
+                />
+                
+                <Button 
+                  className="w-full bg-amber-600 hover:bg-amber-700"
+                  onClick={saveSession}
+                  disabled={saving || time === 0}
+                >
+                  {saving ? (
+                    <>
+                      <Clock className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      Save Session
+                    </>
+                  )}
                 </Button>
-              ) : (
-                <Button onClick={handleTimerPause} className="gap-2">
-                  <PauseCircle className="h-5 w-5" />
-                  Pause
-                </Button>
-              )}
-              <Button variant="outline" onClick={handleTimerReset} className="gap-2">
-                <RefreshCcw className="h-4 w-4" />
-                Reset
-              </Button>
+              </div>
             </CardFooter>
           </Card>
-        </TabsContent>
+        </div>
         
-        <TabsContent value="stopwatch" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Stopwatch</CardTitle>
-              <CardDescription>
-                Track how much time you spend on a task
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex justify-center">
-              <div className="text-6xl font-bold my-12">
-                {formatTime(stopwatchTime)}
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-center gap-4">
-              {!stopwatchRunning ? (
-                <Button onClick={handleStopwatchStart} className="gap-2">
-                  <PlayCircle className="h-5 w-5" />
-                  Start
-                </Button>
-              ) : (
-                <Button onClick={handleStopwatchPause} className="gap-2">
-                  <PauseCircle className="h-5 w-5" />
-                  Pause
-                </Button>
-              )}
-              <Button variant="outline" onClick={handleStopwatchReset} className="gap-2">
-                <RefreshCcw className="h-4 w-4" />
-                Reset
-              </Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
-      </Tabs>
+        {/* History Card */}
+        <div className="md:col-span-1">
+          <TimerHistory />
+        </div>
+      </div>
     </div>
   );
 };

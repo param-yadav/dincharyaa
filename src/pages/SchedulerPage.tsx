@@ -3,59 +3,55 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Calendar as CalendarIcon, Clock } from "lucide-react";
-import { format, isSameDay, addDays, addHours, setHours, setMinutes } from "date-fns";
+import { Plus, Calendar as CalendarIcon, Clock, Edit, Trash2 } from "lucide-react";
+import { format, isSameDay, addHours, setHours, setMinutes, parseISO } from "date-fns";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { SchedulerForm, ScheduleFormData } from "@/components/scheduler/SchedulerForm";
 
 interface ScheduleEvent {
   id: string;
   title: string;
+  description?: string;
   start: Date;
   end: Date;
   isAllDay?: boolean;
+  color?: string;
+  category?: string;
 }
 
 // Define Schedule interface to match with the schedules table
 interface Schedule {
   id: string;
   title: string;
+  description?: string;
   date_from: string;
   date_to: string;
   is_all_day: boolean;
   user_id: string;
   created_at?: string;
   updated_at?: string;
+  color?: string;
+  category?: string;
 }
 
 const SchedulerPage = () => {
   const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [scheduleTitle, setScheduleTitle] = useState("");
-  const [startDate, setStartDate] = useState<Date>(new Date());
-  const [endDate, setEndDate] = useState<Date>(addDays(new Date(), 1));
   const [schedules, setSchedules] = useState<ScheduleEvent[]>([]);
-  const [isAllDay, setIsAllDay] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [startTime, setStartTime] = useState("09:00");
-  const [endTime, setEndTime] = useState("17:00");
-  const [recurringType, setRecurringType] = useState("none");
-  const [recurringDays, setRecurringDays] = useState<string[]>([]);
-
+  const [selectedSchedule, setSelectedSchedule] = useState<ScheduleEvent | null>(null);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  
   // Fetch schedules from Supabase when component mounts
   useEffect(() => {
     const fetchSchedules = async () => {
@@ -74,9 +70,12 @@ const SchedulerPage = () => {
           setSchedules(data.map((item: Schedule) => ({
             id: item.id,
             title: item.title,
-            start: new Date(item.date_from),
-            end: new Date(item.date_to),
-            isAllDay: item.is_all_day || false
+            description: item.description,
+            start: parseISO(item.date_from),
+            end: parseISO(item.date_to),
+            isAllDay: item.is_all_day || false,
+            color: item.color || 'amber',
+            category: item.category || 'Work'
           })));
         }
       } catch (error) {
@@ -94,7 +93,7 @@ const SchedulerPage = () => {
     fetchSchedules();
   }, [user]);
 
-  const handleCreateSchedule = async () => {
+  const handleCreateSchedule = async (formData: ScheduleFormData) => {
     if (!user) {
       toast({
         title: "Authentication required",
@@ -104,7 +103,7 @@ const SchedulerPage = () => {
       return;
     }
     
-    if (!scheduleTitle) {
+    if (!formData.title) {
       toast({
         title: "Title required",
         description: "Please enter a title for your schedule",
@@ -114,13 +113,15 @@ const SchedulerPage = () => {
     }
 
     try {
-      // Parse times
-      let finalStartDate = new Date(startDate);
-      let finalEndDate = new Date(endDate);
+      setLoading(true);
       
-      if (!isAllDay) {
-        const [startHours, startMinutes] = startTime.split(':').map(Number);
-        const [endHours, endMinutes] = endTime.split(':').map(Number);
+      // Parse times
+      let finalStartDate = new Date(formData.startDate);
+      let finalEndDate = new Date(formData.endDate);
+      
+      if (!formData.isAllDay) {
+        const [startHours, startMinutes] = formData.startTime.split(':').map(Number);
+        const [endHours, endMinutes] = formData.endTime.split(':').map(Number);
         
         finalStartDate = setMinutes(setHours(finalStartDate, startHours), startMinutes);
         finalEndDate = setMinutes(setHours(finalEndDate, endHours), endMinutes);
@@ -132,18 +133,19 @@ const SchedulerPage = () => {
           description: "End date must be after start date",
           variant: "destructive",
         });
+        setLoading(false);
         return;
       }
 
       // For recurring schedules, create multiple entries
-      if (recurringType !== 'none' && recurringDays.length > 0) {
+      if (formData.recurringType !== 'none' && formData.recurringDays.length > 0) {
         // Handle recurring schedules
         const daysMap: Record<string, number> = {
           "sunday": 0, "monday": 1, "tuesday": 2, "wednesday": 3, 
           "thursday": 4, "friday": 5, "saturday": 6
         };
         
-        for (const day of recurringDays) {
+        for (const day of formData.recurringDays) {
           const dayNumber = daysMap[day];
           // Create schedules for the next 4 weeks
           for (let i = 0; i < 4; i++) {
@@ -156,9 +158,9 @@ const SchedulerPage = () => {
             let scheduleStart = scheduleDate;
             let scheduleEnd = scheduleDate;
             
-            if (!isAllDay) {
-              const [startHours, startMinutes] = startTime.split(':').map(Number);
-              const [endHours, endMinutes] = endTime.split(':').map(Number);
+            if (!formData.isAllDay) {
+              const [startHours, startMinutes] = formData.startTime.split(':').map(Number);
+              const [endHours, endMinutes] = formData.endTime.split(':').map(Number);
               
               scheduleStart = setMinutes(setHours(scheduleStart, startHours), startMinutes);
               scheduleEnd = setMinutes(setHours(scheduleEnd, endHours), endMinutes);
@@ -170,10 +172,13 @@ const SchedulerPage = () => {
             
             const newSchedule: Schedule = {
               id: '', // This will be auto-generated by Supabase
-              title: `${scheduleTitle} (${day.charAt(0).toUpperCase() + day.slice(1)})`,
+              title: `${formData.title} (${day.charAt(0).toUpperCase() + day.slice(1)})`,
+              description: formData.description,
               date_from: scheduleStart.toISOString(),
               date_to: scheduleEnd.toISOString(),
-              is_all_day: isAllDay,
+              is_all_day: formData.isAllDay,
+              color: formData.color,
+              category: formData.category,
               user_id: user.id
             };
             
@@ -189,10 +194,13 @@ const SchedulerPage = () => {
         // Single schedule
         const newSchedule: Schedule = {
           id: '', // This will be auto-generated by Supabase
-          title: scheduleTitle,
+          title: formData.title,
+          description: formData.description,
           date_from: finalStartDate.toISOString(),
           date_to: finalEndDate.toISOString(),
-          is_all_day: isAllDay,
+          is_all_day: formData.isAllDay,
+          color: formData.color,
+          category: formData.category,
           user_id: user.id
         };
   
@@ -208,9 +216,12 @@ const SchedulerPage = () => {
         const addedSchedule: ScheduleEvent = {
           id: data.id,
           title: data.title,
+          description: data.description,
           start: new Date(data.date_from),
           end: new Date(data.date_to),
-          isAllDay: data.is_all_day || false
+          isAllDay: data.is_all_day || false,
+          color: data.color,
+          category: data.category
         };
         
         setSchedules([...schedules, addedSchedule]);
@@ -247,10 +258,6 @@ const SchedulerPage = () => {
         }
       }
       
-      setScheduleTitle("");
-      setIsAllDay(false);
-      setRecurringType("none");
-      setRecurringDays([]);
       setDialogOpen(false);
       
       // Refresh schedules
@@ -263,9 +270,12 @@ const SchedulerPage = () => {
         setSchedules(refreshedData.map((item: Schedule) => ({
           id: item.id,
           title: item.title,
-          start: new Date(item.date_from),
-          end: new Date(item.date_to),
-          isAllDay: item.is_all_day || false
+          description: item.description,
+          start: parseISO(item.date_from),
+          end: parseISO(item.date_to),
+          isAllDay: item.is_all_day || false,
+          color: item.color || 'amber',
+          category: item.category || 'Work'
         })));
       }
     } catch (error) {
@@ -275,16 +285,50 @@ const SchedulerPage = () => {
         description: "Please try again",
         variant: "destructive"
       });
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Helper function to toggle recurring days
-  const toggleRecurringDay = (day: string) => {
-    if (recurringDays.includes(day)) {
-      setRecurringDays(recurringDays.filter(d => d !== day));
-    } else {
-      setRecurringDays([...recurringDays, day]);
+  const handleDeleteSchedule = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('schedules')
+        .delete()
+        .eq('id', id);
+        
+      if (error) throw error;
+      
+      setSchedules(schedules.filter(schedule => schedule.id !== id));
+      setViewDialogOpen(false);
+      setSelectedSchedule(null);
+      
+      toast({
+        title: "Schedule deleted",
+        description: "Your schedule has been removed"
+      });
+    } catch (error) {
+      console.error('Error deleting schedule:', error);
+      toast({
+        title: "Failed to delete schedule",
+        description: "Please try again",
+        variant: "destructive"
+      });
     }
+  };
+
+  const getColorClass = (color: string = 'amber') => {
+    const colorMap: Record<string, string> = {
+      'amber': 'bg-amber-500 border-amber-600',
+      'blue': 'bg-blue-500 border-blue-600',
+      'green': 'bg-green-500 border-green-600',
+      'red': 'bg-red-500 border-red-600',
+      'purple': 'bg-purple-500 border-purple-600',
+      'indigo': 'bg-indigo-500 border-indigo-600',
+      'pink': 'bg-pink-500 border-pink-600',
+    };
+    
+    return colorMap[color] || colorMap['amber'];
   };
 
   // Filter events for the selected date
@@ -310,7 +354,7 @@ const SchedulerPage = () => {
               mode="single"
               selected={selectedDate}
               onSelect={(date) => date && setSelectedDate(date)}
-              className="rounded-md border"
+              className="rounded-md border pointer-events-auto"
             />
           </CardContent>
         </Card>
@@ -323,162 +367,27 @@ const SchedulerPage = () => {
             </CardTitle>
             
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm" className="bg-amber-600 hover:bg-amber-700">
-                  <Plus className="mr-2 h-4 w-4" /> Create Schedule
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[600px] bg-amber-50 border-amber-200">
+              <Button 
+                size="sm" 
+                className="bg-amber-600 hover:bg-amber-700"
+                onClick={() => setDialogOpen(true)}
+              >
+                <Plus className="mr-2 h-4 w-4" /> Create Schedule
+              </Button>
+              
+              <DialogContent className="sm:max-w-[600px] bg-amber-50 border-amber-200 max-h-[90vh] overflow-hidden">
                 <DialogHeader>
                   <DialogTitle className="text-xl">Create New Schedule</DialogTitle>
                   <DialogDescription>
-                    Set up a new schedule to manage multiple tasks
+                    Set up a new schedule to manage your day
                   </DialogDescription>
                 </DialogHeader>
-                <div className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto pr-2">
-                  <div className="grid gap-2">
-                    <Label htmlFor="title" className="text-base font-medium">Title</Label>
-                    <Input
-                      id="title"
-                      placeholder="Schedule title"
-                      value={scheduleTitle}
-                      onChange={(e) => setScheduleTitle(e.target.value)}
-                      className="border-amber-300 bg-white"
-                    />
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="allday"
-                      checked={isAllDay}
-                      onChange={() => setIsAllDay(!isAllDay)}
-                      className="h-4 w-4 rounded border-amber-300 text-amber-600"
-                    />
-                    <Label htmlFor="allday" className="font-medium">All-day schedule</Label>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="start-date" className="text-base font-medium">Start Date</Label>
-                      <div className="flex h-10 items-center justify-between rounded-md border border-amber-300 bg-white px-3 py-2 text-sm">
-                        <span>
-                          {format(startDate, "MMM dd, yyyy")}
-                        </span>
-                        <CalendarIcon className="h-4 w-4 opacity-50" />
-                      </div>
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="end-date" className="text-base font-medium">End Date</Label>
-                      <div className="flex h-10 items-center justify-between rounded-md border border-amber-300 bg-white px-3 py-2 text-sm">
-                        <span>
-                          {format(endDate, "MMM dd, yyyy")}
-                        </span>
-                        <CalendarIcon className="h-4 w-4 opacity-50" />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {!isAllDay && (
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="grid gap-2">
-                        <Label htmlFor="start-time" className="text-base font-medium">Start Time</Label>
-                        <div className="flex items-center">
-                          <Input
-                            id="start-time"
-                            type="time"
-                            value={startTime}
-                            onChange={(e) => setStartTime(e.target.value)}
-                            className="border-amber-300 bg-white"
-                          />
-                          <Clock className="h-5 w-5 ml-2 text-amber-600" />
-                        </div>
-                      </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor="end-time" className="text-base font-medium">End Time</Label>
-                        <div className="flex items-center">
-                          <Input
-                            id="end-time"
-                            type="time"
-                            value={endTime}
-                            onChange={(e) => setEndTime(e.target.value)}
-                            className="border-amber-300 bg-white"
-                          />
-                          <Clock className="h-5 w-5 ml-2 text-amber-600" />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div className="grid gap-2">
-                    <Label className="text-base font-medium">Recurring Schedule</Label>
-                    <select 
-                      className="border border-amber-300 rounded-md p-2 bg-white"
-                      value={recurringType}
-                      onChange={(e) => setRecurringType(e.target.value)}
-                    >
-                      <option value="none">Not recurring</option>
-                      <option value="weekly">Weekly</option>
-                      <option value="monthly">Monthly</option>
-                    </select>
-                  </div>
-                  
-                  {recurringType === 'weekly' && (
-                    <div className="grid gap-2">
-                      <Label className="text-base font-medium">Repeat on days</Label>
-                      <div className="flex flex-wrap gap-2">
-                        {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(day => (
-                          <Button 
-                            key={day}
-                            type="button"
-                            variant={recurringDays.includes(day) ? "default" : "outline"}
-                            className={recurringDays.includes(day) ? "bg-amber-600" : "border-amber-300 hover:bg-amber-100"}
-                            onClick={() => toggleRecurringDay(day)}
-                          >
-                            {day.charAt(0).toUpperCase() + day.slice(1, 3)}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div className="grid gap-2">
-                    <Label className="text-base font-medium">Date Range</Label>
-                    <Calendar
-                      mode="range"
-                      defaultMonth={startDate}
-                      selected={{
-                        from: startDate,
-                        to: endDate,
-                      }}
-                      onSelect={(range) => {
-                        if (range?.from) setStartDate(range.from);
-                        if (range?.to) setEndDate(range.to);
-                      }}
-                      numberOfMonths={2}
-                      className="rounded-md border pointer-events-auto bg-white p-2"
-                    />
-                  </div>
-                  
-                  <div className="text-sm text-amber-700 bg-amber-100 p-3 rounded-md">
-                    <p><strong>Note:</strong> For multi-day schedules, individual tasks will be automatically created for each day.</p>
-                  </div>
-                </div>
-                <DialogFooter className="mt-6">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setDialogOpen(false)}
-                    className="border-amber-300 text-amber-700"
-                  >
-                    Cancel
-                  </Button>
-                  <Button 
-                    className="bg-amber-600 hover:bg-amber-700" 
-                    onClick={handleCreateSchedule}
-                  >
-                    Create Schedule
-                  </Button>
-                </DialogFooter>
+                
+                <SchedulerForm 
+                  onSubmit={handleCreateSchedule} 
+                  onCancel={() => setDialogOpen(false)}
+                  loading={loading}
+                />
               </DialogContent>
             </Dialog>
           </CardHeader>
@@ -495,8 +404,15 @@ const SchedulerPage = () => {
             ) : eventsForSelectedDate.length > 0 ? (
               <div className="space-y-4">
                 {eventsForSelectedDate.map((event) => (
-                  <div key={event.id} className="flex items-center p-4 rounded-lg bg-amber-50 border border-amber-200">
-                    <div className="flex-1">
+                  <div 
+                    key={event.id} 
+                    className={`flex items-center p-4 rounded-lg bg-white border-l-4 ${getColorClass(event.color)}`}
+                    onClick={() => {
+                      setSelectedSchedule(event);
+                      setViewDialogOpen(true);
+                    }}
+                  >
+                    <div className="flex-1 cursor-pointer">
                       <div className="flex items-center">
                         <h4 className="text-base font-medium">{event.title}</h4>
                         {event.isAllDay && (
@@ -504,17 +420,26 @@ const SchedulerPage = () => {
                             All day
                           </span>
                         )}
+                        {event.category && (
+                          <span className="ml-2 px-2 py-0.5 text-xs bg-gray-100 text-gray-800 rounded-full">
+                            {event.category}
+                          </span>
+                        )}
                       </div>
                       <div className="text-sm text-muted-foreground mt-1">
                         {format(new Date(event.start), "MMM d, yyyy")}
-                        {!isAllDay && format(new Date(event.start), ", h:mm a")}
+                        {!event.isAllDay && format(new Date(event.start), ", h:mm a")}
                         {!isSameDay(new Date(event.start), new Date(event.end)) && 
                           ` - ${format(new Date(event.end), "MMM d, yyyy")}`}
-                        {!isAllDay && !isSameDay(new Date(event.start), new Date(event.end)) && 
+                        {!event.isAllDay && !isSameDay(new Date(event.start), new Date(event.end)) && 
                           format(new Date(event.end), ", h:mm a")}
                       </div>
+                      {event.description && (
+                        <div className="mt-1 text-sm text-gray-600 line-clamp-2">
+                          {event.description}
+                        </div>
+                      )}
                     </div>
-                    <Button variant="outline" size="sm" className="border-amber-300 hover:bg-amber-100">View</Button>
                   </div>
                 ))}
               </div>
@@ -525,7 +450,7 @@ const SchedulerPage = () => {
                 </div>
                 <h3 className="text-lg font-medium mb-1">No schedules found</h3>
                 <p className="text-muted-foreground mb-4">
-                  Create a new schedule to begin planning
+                  Create a new schedule to begin planning your day
                 </p>
                 <Button 
                   className="bg-amber-600 hover:bg-amber-700"
@@ -538,8 +463,87 @@ const SchedulerPage = () => {
           </CardContent>
         </Card>
       </div>
+      
+      {/* View Schedule Dialog */}
+      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        <DialogContent className="sm:max-w-[500px] bg-white">
+          {selectedSchedule && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-xl flex items-center justify-between">
+                  <span>{selectedSchedule.title}</span>
+                  {selectedSchedule.isAllDay && (
+                    <span className="text-xs font-normal px-2 py-1 bg-amber-100 text-amber-800 rounded-full">
+                      All day
+                    </span>
+                  )}
+                </DialogTitle>
+                <DialogDescription>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    {format(new Date(selectedSchedule.start), "MMMM d, yyyy")}
+                    {!selectedSchedule.isAllDay && format(new Date(selectedSchedule.start), ", h:mm a")}
+                    {!isSameDay(new Date(selectedSchedule.start), new Date(selectedSchedule.end)) && 
+                      ` - ${format(new Date(selectedSchedule.end), "MMMM d, yyyy")}`}
+                    {!selectedSchedule.isAllDay && 
+                      format(new Date(selectedSchedule.end), ", h:mm a")}
+                  </div>
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-4">
+                {selectedSchedule.description && (
+                  <div>
+                    <h4 className="text-sm font-semibold mb-1">Description</h4>
+                    <p className="text-sm">{selectedSchedule.description}</p>
+                  </div>
+                )}
+                
+                {selectedSchedule.category && (
+                  <div className="flex items-center">
+                    <h4 className="text-sm font-semibold mr-2">Category:</h4>
+                    <span className="px-2 py-0.5 text-xs bg-gray-100 text-gray-800 rounded-full">
+                      {selectedSchedule.category}
+                    </span>
+                  </div>
+                )}
+                
+                <div className="flex justify-end space-x-2 pt-4">
+                  <Button 
+                    variant="outline" 
+                    className="text-gray-600"
+                    onClick={() => setViewDialogOpen(false)}
+                  >
+                    Close
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="text-amber-700 border-amber-300"
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit
+                  </Button>
+                  <Button 
+                    variant="destructive"
+                    onClick={() => handleDeleteSchedule(selectedSchedule.id)}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
+};
+
+// Helper function to add days to a date
+const addDays = (date: Date, days: number): Date => {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result;
 };
 
 export default SchedulerPage;

@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useNotifications } from "@/hooks/use-notifications";
 import { 
   Tooltip, 
   TooltipContent, 
@@ -65,7 +66,7 @@ const NavItem = ({
         {!isCollapsed && <span>{label}</span>}
       </Button>
       
-      {notification && notification > 0 && (
+      {notification !== undefined && notification > 0 && (
         <span className={cn(
           "absolute rounded-full bg-red-500 text-white text-xs flex items-center justify-center",
           isCollapsed 
@@ -105,6 +106,7 @@ const Sidebar = () => {
   const isMobile = useIsMobile();
   const [collapsed, setCollapsed] = useState(false);
   const [hovered, setHovered] = useState(false);
+  const { unreadCount } = useNotifications();
   
   // Reset collapse state based on screen size
   useEffect(() => {
@@ -127,7 +129,7 @@ const Sidebar = () => {
   const navItems = [
     { id: "tasks", label: "Task List", icon: List, path: "/tasks", implemented: true },
     { id: "calendar", label: "Calendar", icon: Calendar, path: "/scheduler", implemented: true },
-    { id: "team", label: "Team", icon: Users, path: "/team", implemented: true, notification: 2 },
+    { id: "team", label: "Team", icon: Users, path: "/team", implemented: true },
     { id: "notes", label: "Notes", icon: FileText, path: "/notes", implemented: true },
     { id: "timer", label: "Timer", icon: Timer, path: "/timer", implemented: true },
     { id: "analytics", label: "Analytics", icon: FileChartColumn, path: "/analytics", implemented: true }
@@ -135,7 +137,7 @@ const Sidebar = () => {
 
   const supportItems = [
     { id: "profile", label: "Profile", icon: User, path: "/profile", implemented: true },
-    { id: "notifications", label: "Notifications", icon: BellRing, path: "/notifications", implemented: true, notification: 5 },
+    { id: "notifications", label: "Notifications", icon: BellRing, path: "/notifications", implemented: true, notification: unreadCount },
     { id: "settings", label: "Settings", icon: Settings, path: "/settings", implemented: true },
     { id: "help", label: "Help", icon: HelpCircle, path: "/help", implemented: false },
     { id: "contact", label: "Contact", icon: Mail, path: "/contact", implemented: true }
@@ -199,7 +201,6 @@ const Sidebar = () => {
                 to={item.path}
                 isActive={isActive}
                 isCollapsed={isCollapsedCalc}
-                notification={item.notification}
                 onClick={!item.implemented ? () => toast({
                   title: "Coming Soon",
                   description: `The ${item.label} feature is under development`,

@@ -3,8 +3,10 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Menu, X, Sun, Moon, LogIn, LogOut } from "lucide-react";
+import { Menu, X, Sun, Moon, LogIn } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -15,9 +17,9 @@ const Header = ({ toggleSidebar, sidebarOpen }: HeaderProps) => {
   const isMobile = useIsMobile();
   const [darkMode, setDarkMode] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // Would come from auth context in real app
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const toggleMenu = () => setMenuOpen(!menuOpen);
   
@@ -30,17 +32,8 @@ const Header = ({ toggleSidebar, sidebarOpen }: HeaderProps) => {
     }
   };
 
-  const handleAuthAction = () => {
-    if (isLoggedIn) {
-      // This would be connected to Supabase or another auth provider
-      setIsLoggedIn(false);
-      toast({
-        title: "Signed out",
-        description: "You have been signed out successfully.",
-      });
-    } else {
-      navigate("/auth");
-    }
+  const navigateToAuth = () => {
+    navigate("/auth");
   };
 
   useEffect(() => {
@@ -49,6 +42,15 @@ const Header = ({ toggleSidebar, sidebarOpen }: HeaderProps) => {
     setDarkMode(isDark);
     if (isDark) document.documentElement.classList.add('dark');
   }, []);
+
+  const getInitials = (name?: string) => {
+    if (!name) return "U";
+    return name
+      .split(' ')
+      .map(part => part.charAt(0).toUpperCase())
+      .slice(0, 2)
+      .join('');
+  };
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-dincharya-text/90 shadow-md border-b border-dincharya-muted/20 backdrop-blur-md">
@@ -89,22 +91,25 @@ const Header = ({ toggleSidebar, sidebarOpen }: HeaderProps) => {
           >
             {darkMode ? <Sun size={18} /> : <Moon size={18} />}
           </Button>
-          <Button 
-            className="ml-4 bg-dincharya-primary hover:bg-dincharya-primary/90"
-            onClick={handleAuthAction}
-          >
-            {isLoggedIn ? (
-              <>
-                <LogOut className="mr-2 h-4 w-4" />
-                Sign Out
-              </>
-            ) : (
-              <>
-                <LogIn className="mr-2 h-4 w-4" />
-                Sign In
-              </>
-            )}
-          </Button>
+          
+          {user ? (
+            <Link to="/profile" className="ml-4">
+              <Avatar className="h-9 w-9 border-2 border-amber-500 hover:border-amber-600 transition-colors">
+                <AvatarImage src={user.user_metadata?.avatar_url || ""} />
+                <AvatarFallback className="bg-amber-200 text-amber-800">
+                  {getInitials(user.user_metadata?.full_name)}
+                </AvatarFallback>
+              </Avatar>
+            </Link>
+          ) : (
+            <Button 
+              className="ml-4 bg-dincharya-primary hover:bg-dincharya-primary/90"
+              onClick={navigateToAuth}
+            >
+              <LogIn className="mr-2 h-4 w-4" />
+              Sign In
+            </Button>
+          )}
         </nav>
         
         {/* Mobile Menu Toggle */}
@@ -117,6 +122,16 @@ const Header = ({ toggleSidebar, sidebarOpen }: HeaderProps) => {
           >
             {darkMode ? <Sun size={18} /> : <Moon size={18} />}
           </Button>
+          {user ? (
+            <Link to="/profile" className="mr-2">
+              <Avatar className="h-8 w-8 border-2 border-amber-500">
+                <AvatarImage src={user.user_metadata?.avatar_url || ""} />
+                <AvatarFallback className="bg-amber-200 text-amber-800 text-xs">
+                  {getInitials(user.user_metadata?.full_name)}
+                </AvatarFallback>
+              </Avatar>
+            </Link>
+          ) : null}
           <Button variant="ghost" onClick={toggleMenu}>
             {menuOpen ? <X size={24} /> : <Menu size={24} />}
           </Button>
@@ -131,27 +146,20 @@ const Header = ({ toggleSidebar, sidebarOpen }: HeaderProps) => {
             <MobileNavLink to="/tasks" onClick={() => setMenuOpen(false)}>Tasks</MobileNavLink>
             <MobileNavLink to="/about" onClick={() => setMenuOpen(false)}>About</MobileNavLink>
             <MobileNavLink to="/contact" onClick={() => setMenuOpen(false)}>Contact</MobileNavLink>
-            <div className="pt-2 border-t">
-              <Button 
-                className="w-full bg-dincharya-primary hover:bg-dincharya-primary/90"
-                onClick={() => {
-                  setMenuOpen(false);
-                  handleAuthAction();
-                }}
-              >
-                {isLoggedIn ? (
-                  <>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sign Out
-                  </>
-                ) : (
-                  <>
-                    <LogIn className="mr-2 h-4 w-4" />
-                    Sign In
-                  </>
-                )}
-              </Button>
-            </div>
+            {!user && (
+              <div className="pt-2 border-t">
+                <Button 
+                  className="w-full bg-dincharya-primary hover:bg-dincharya-primary/90"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    navigateToAuth();
+                  }}
+                >
+                  <LogIn className="mr-2 h-4 w-4" />
+                  Sign In
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       )}
