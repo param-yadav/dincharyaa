@@ -385,64 +385,65 @@ const TimerPage = () => {
                           size="lg" 
                           variant="outline" 
                           onClick={pauseTimer}
+                        >
+                          <Pause className="h-5 w-5 mr-2" />
+                          Pause
+                        </Button>
+                      )}
+                      
+                      <Button 
+                        size="lg" 
+                        variant="outline" 
+                        onClick={resetTimer}
                       >
-                        <Pause className="h-5 w-5 mr-2" />
-                        Pause
+                        <RotateCcw className="h-5 w-5 mr-2" />
+                        Reset
                       </Button>
-                    )}
-                    
-                    <Button 
-                      size="lg" 
-                      variant="outline" 
-                      onClick={resetTimer}
-                    >
-                      <RotateCcw className="h-5 w-5 mr-2" />
-                      Reset
-                    </Button>
+                    </div>
                   </div>
-                </div>
-              </TabsContent>
-            </Tabs>
-          </CardHeader>
-          
-          <CardFooter className="flex flex-col">
-            <Separator className="mb-4" />
+                </TabsContent>
+              </Tabs>
+            </CardHeader>
             
-            <div className="w-full space-y-3">
-              <Label htmlFor="timer-notes">Notes (optional)</Label>
-              <Textarea 
-                id="timer-notes" 
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="What are you timing? Add notes here..."
-                rows={3}
-              />
+            <CardFooter className="flex flex-col">
+              <Separator className="mb-4" />
               
-              <Button 
-                className="w-full bg-amber-600 hover:bg-amber-700"
-                onClick={saveSession}
-                disabled={saving || time === 0}
-              >
-                {saving ? (
-                  <>
-                    <Clock className="h-4 w-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    Save Session
-                  </>
-                )}
-              </Button>
-            </div>
-          </CardFooter>
-        </Card>
-      </div>
-      
-      {/* History Card */}
-      <div className="md:col-span-1">
-        <TimerHistory />
+              <div className="w-full space-y-3">
+                <Label htmlFor="timer-notes">Notes (optional)</Label>
+                <Textarea 
+                  id="timer-notes" 
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="What are you timing? Add notes here..."
+                  rows={3}
+                />
+                
+                <Button 
+                  className="w-full bg-amber-600 hover:bg-amber-700"
+                  onClick={saveSession}
+                  disabled={saving || time === 0}
+                >
+                  {saving ? (
+                    <>
+                      <Clock className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      Save Session
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardFooter>
+          </Card>
+        </div>
+        
+        {/* History Card */}
+        <div className="md:col-span-1">
+          <TimerHistory />
+        </div>
       </div>
     </div>
   );
