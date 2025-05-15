@@ -139,15 +139,21 @@ const TeamPage = () => {
       // 3. Send an email notification
       
       // For demo, create a pending invite
-      const newInvite: PendingInvite = {
-        id: Date.now().toString(),
-        email: email,
-        name: name || undefined,
-        role: role || undefined,
-        created_at: new Date().toISOString()
-      };
-      
-      setPendingInvites([...pendingInvites, newInvite]);
+      try {
+  const { data, error } = await supabase
+    .from("team_invitations")
+    .insert([{ sender_id: user.id, recipient_email: email, role }]);
+
+  if (error) throw error;
+
+  toast({ title: "Invitation sent", description: `An invite has been sent to ${email}` });
+  setEmail("");
+  setName("");
+  setRole("");
+} catch (error) {
+  console.error("Error inviting:", error);
+  toast({ title: "Failed to send", description: "Try again later.", variant: "destructive" });
+}
       
       // Create notification
       const savedNotifications = localStorage.getItem(`notifications_${user.id}`);
