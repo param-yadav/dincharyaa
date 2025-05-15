@@ -155,7 +155,9 @@ const SchedulerPage = () => {
       // Create tasks for each day in the schedule if it's multi-day
       if (!isSameDay(startDate, endDate)) {
         try {
-          const { error: tasksError } = await supabase.rpc(
+          // Use type assertion to work around TypeScript limitations
+          // This allows us to call the RPC function without modifying the types file
+          const { error: tasksError } = await (supabase.rpc as any)(
             'create_tasks_from_schedule',
             { 
               schedule_id: data.id,

@@ -131,6 +131,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_tasks_from_schedule: {
+        Args: { schedule_id: string; schedule_title: string }
+        Returns: undefined
+      }
       find_user_id_by_email: {
         Args: { email: string }
         Returns: string
