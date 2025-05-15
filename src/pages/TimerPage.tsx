@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Play, Pause, RotateCcw, Clock, Timer as TimerIcon, Save } from "lucide-react";
 import { TimerHistory } from "@/components/timer/TimerHistory";
+import { Separator } from "@/components/ui/separator";
 
 const TimerPage = () => {
   const { user } = useAuth();
