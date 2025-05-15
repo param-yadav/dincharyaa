@@ -19,6 +19,8 @@ export interface Task {
   user_id: string;
   created_at: string;
   updated_at: string;
+  reminder_time?: string;
+  reminder_sent?: boolean;
 }
 
 export const useTasks = () => {
@@ -39,6 +41,7 @@ export const useTasks = () => {
       const { data, error } = await supabase
         .from("tasks")
         .select("*")
+        .order("is_pinned", { ascending: false }) // Pinned tasks first
         .order("start_time", { ascending: true });
         
       if (error) {
@@ -52,6 +55,9 @@ export const useTasks = () => {
       })) || [];
       
       setTasks(typedData as Task[]);
+      
+      // Check for tasks that need reminders
+      checkForReminders(typedData as Task[]);
     } catch (error: any) {
       toast({
         title: "Error fetching tasks",
@@ -62,6 +68,31 @@ export const useTasks = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Check for tasks that need reminders
+  const checkForReminders = (taskList: Task[]) => {
+    if (!taskList?.length) return;
+    
+    const now = new Date();
+    const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60000);
+    
+    taskList.forEach(task => {
+      const startTime = new Date(task.start_time);
+      
+      // If the task starts within the next 5 minutes and a reminder hasn't been sent
+      if (!task.completed && !task.reminder_sent && 
+          startTime > now && startTime <= fiveMinutesFromNow) {
+        // Send a reminder
+        toast({
+          title: "Task Reminder",
+          description: `"${task.title}" starts at ${startTime.toLocaleTimeString()}`,
+        });
+        
+        // Update the task to mark reminder as sent
+        updateTask(task.id, { reminder_sent: true });
+      }
+    });
   };
 
   // Validate and normalize priority values
@@ -96,10 +127,20 @@ export const useTasks = () => {
         }
       }
 
+      // Calculate reminder time (15 minutes before start time by default)
+      let reminder_time = undefined;
+      if (task.start_time) {
+        const startTime = new Date(task.start_time);
+        const reminderTime = new Date(startTime.getTime() - 15 * 60000); // 15 minutes before
+        reminder_time = reminderTime.toISOString();
+      }
+
       const newTask = {
         ...task,
         user_id: user.id,
-        assigned_user_id
+        assigned_user_id,
+        reminder_time,
+        reminder_sent: false
       };
       
       const { data, error } = await supabase
@@ -205,11 +246,18 @@ export const useTasks = () => {
     await updateTask(id, { completed: !isCompleted });
   };
 
-  // Set up real-time updates
+  // Set up real-time updates and reminder checker
   useEffect(() => {
     if (!user) return;
 
     fetchTasks();
+
+    // Check for reminders every minute
+    const reminderInterval = setInterval(() => {
+      if (tasks.length > 0) {
+        checkForReminders(tasks);
+      }
+    }, 60000);
 
     // Subscribe to real-time updates
     const channel = supabase
@@ -229,9 +277,10 @@ export const useTasks = () => {
       .subscribe();
 
     return () => {
+      clearInterval(reminderInterval);
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, tasks]);
 
   return {
     tasks,

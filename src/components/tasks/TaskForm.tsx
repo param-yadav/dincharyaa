@@ -62,6 +62,7 @@ const TaskForm = ({ onTaskCreate, initialData, onSubmit, onCancel }: TaskFormPro
   const [assignedTo, setAssignedTo] = useState("");
   const [isPinned, setIsPinned] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [reminderMinutes, setReminderMinutes] = useState<string>("15");
   
   const { toast } = useToast();
   const { user } = useAuth();
@@ -88,6 +89,14 @@ const TaskForm = ({ onTaskCreate, initialData, onSubmit, onCancel }: TaskFormPro
       setAssignedTo(initialData.assigned_to || "");
       setIsPinned(initialData.is_pinned || false);
       setIsCompleted(initialData.completed || false);
+      
+      // Set reminder minutes if available
+      if (initialData.start_time && initialData.reminder_time) {
+        const startTime = new Date(initialData.start_time).getTime();
+        const reminderTime = new Date(initialData.reminder_time).getTime();
+        const diffMinutes = Math.round((startTime - reminderTime) / 60000);
+        setReminderMinutes(diffMinutes.toString());
+      }
     }
   }, [initialData]);
 
@@ -161,7 +170,8 @@ const TaskForm = ({ onTaskCreate, initialData, onSubmit, onCancel }: TaskFormPro
         category,
         assigned_to: assignedTo,
         is_pinned: isPinned,
-        completed: isCompleted
+        completed: isCompleted,
+        reminder_sent: false
       };
       
       if (onSubmit) {
@@ -182,6 +192,7 @@ const TaskForm = ({ onTaskCreate, initialData, onSubmit, onCancel }: TaskFormPro
         setAssignedTo("");
         setIsPinned(false);
         setIsCompleted(false);
+        setReminderMinutes("15");
       }
       
       setOpen(false);
@@ -305,6 +316,27 @@ const TaskForm = ({ onTaskCreate, initialData, onSubmit, onCancel }: TaskFormPro
           </div>
           
           <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="edit-reminder" className="text-right">
+              Reminder
+            </Label>
+            <Select
+              value={reminderMinutes}
+              onValueChange={setReminderMinutes}
+            >
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder="Set reminder" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5">5 minutes before</SelectItem>
+                <SelectItem value="15">15 minutes before</SelectItem>
+                <SelectItem value="30">30 minutes before</SelectItem>
+                <SelectItem value="60">1 hour before</SelectItem>
+                <SelectItem value="120">2 hours before</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="edit-priority" className="text-right">
               Priority
             </Label>
@@ -340,6 +372,12 @@ const TaskForm = ({ onTaskCreate, initialData, onSubmit, onCancel }: TaskFormPro
                 <SelectItem value="Home">Home</SelectItem>
                 <SelectItem value="Errands">Errands</SelectItem>
                 <SelectItem value="Health">Health</SelectItem>
+                <SelectItem value="Breakfast">Breakfast</SelectItem>
+                <SelectItem value="Lunch">Lunch</SelectItem>
+                <SelectItem value="Dinner">Dinner</SelectItem>
+                <SelectItem value="Exercise">Exercise</SelectItem>
+                <SelectItem value="Study">Study</SelectItem>
+                <SelectItem value="Meeting">Meeting</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -372,7 +410,7 @@ const TaskForm = ({ onTaskCreate, initialData, onSubmit, onCancel }: TaskFormPro
                 />
                 <label
                   htmlFor="edit-completed"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 dark:text-gray-200"
                 >
                   Mark as completed
                 </label>
@@ -401,14 +439,14 @@ const TaskForm = ({ onTaskCreate, initialData, onSubmit, onCancel }: TaskFormPro
           <Plus className="h-4 w-4" /> Add Task
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px] bg-amber-100 border-amber-200">
+      <DialogContent className="sm:max-w-[500px] bg-amber-50 border-amber-200 dark:bg-dincharya-text/80 dark:border-dincharya-border">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle className="text-center text-xl">Create New Task</DialogTitle>
+            <DialogTitle className="text-center text-xl dark:text-white">Create New Task</DialogTitle>
           </DialogHeader>
           <div className="grid gap-5 py-4">
             <div className="grid grid-cols-[100px_1fr] items-center gap-4">
-              <Label htmlFor="title" className="text-right font-medium">
+              <Label htmlFor="title" className="text-right font-medium dark:text-white">
                 Title
               </Label>
               <div className="flex gap-2 items-center">
@@ -416,7 +454,7 @@ const TaskForm = ({ onTaskCreate, initialData, onSubmit, onCancel }: TaskFormPro
                   id="title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="border-amber-300 bg-white"
+                  className="border-amber-300 bg-white dark:bg-dincharya-muted dark:border-dincharya-border dark:text-white"
                   placeholder="Enter task title"
                   required
                 />
@@ -433,21 +471,21 @@ const TaskForm = ({ onTaskCreate, initialData, onSubmit, onCancel }: TaskFormPro
             </div>
             
             <div className="grid grid-cols-[100px_1fr] items-start gap-4">
-              <Label htmlFor="description" className="text-right font-medium pt-2">
+              <Label htmlFor="description" className="text-right font-medium pt-2 dark:text-white">
                 Description
               </Label>
               <Textarea
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="border-amber-300 bg-white"
+                className="border-amber-300 bg-white dark:bg-dincharya-muted dark:border-dincharya-border dark:text-white"
                 placeholder="Enter task description"
                 rows={3}
               />
             </div>
             
             <div className="grid grid-cols-[100px_1fr] items-center gap-4">
-              <Label htmlFor="startDate" className="text-right font-medium">
+              <Label htmlFor="startDate" className="text-right font-medium dark:text-white">
                 Date
               </Label>
               <Popover>
@@ -455,15 +493,15 @@ const TaskForm = ({ onTaskCreate, initialData, onSubmit, onCancel }: TaskFormPro
                   <Button
                     variant="outline"
                     className={cn(
-                      "w-full justify-start text-left font-normal border-amber-300 bg-white",
-                      !startDate && "text-muted-foreground"
+                      "w-full justify-start text-left font-normal border-amber-300 bg-white dark:bg-dincharya-muted dark:border-dincharya-border dark:text-white",
+                      !startDate && "text-muted-foreground dark:text-gray-400"
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {startDate ? format(startDate, "PPP") : <span>Pick a date</span>}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto p-0 bg-white dark:bg-dincharya-text" align="start">
                   <Calendar
                     mode="single"
                     selected={startDate}
@@ -476,7 +514,7 @@ const TaskForm = ({ onTaskCreate, initialData, onSubmit, onCancel }: TaskFormPro
             </div>
             
             <div className="grid grid-cols-[100px_1fr] items-center gap-4">
-              <Label htmlFor="startTime" className="text-right font-medium">
+              <Label htmlFor="startTime" className="text-right font-medium dark:text-white">
                 Start Time
               </Label>
               <div className="flex items-center gap-2">
@@ -485,15 +523,15 @@ const TaskForm = ({ onTaskCreate, initialData, onSubmit, onCancel }: TaskFormPro
                   type="time"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
-                  className="border-amber-300 bg-white"
+                  className="border-amber-300 bg-white dark:bg-dincharya-muted dark:border-dincharya-border dark:text-white"
                   required
                 />
-                <Clock className="h-5 w-5 text-muted-foreground" />
+                <Clock className="h-5 w-5 text-muted-foreground dark:text-gray-400" />
               </div>
             </div>
             
             <div className="grid grid-cols-[100px_1fr] items-center gap-4">
-              <Label htmlFor="endTime" className="text-right font-medium">
+              <Label htmlFor="endTime" className="text-right font-medium dark:text-white">
                 End Time
               </Label>
               <div className="flex items-center gap-2">
@@ -502,24 +540,45 @@ const TaskForm = ({ onTaskCreate, initialData, onSubmit, onCancel }: TaskFormPro
                   type="time"
                   value={endTime}
                   onChange={(e) => setEndTime(e.target.value)}
-                  className="border-amber-300 bg-white"
+                  className="border-amber-300 bg-white dark:bg-dincharya-muted dark:border-dincharya-border dark:text-white"
                 />
-                <Clock className="h-5 w-5 text-muted-foreground" />
+                <Clock className="h-5 w-5 text-muted-foreground dark:text-gray-400" />
               </div>
             </div>
             
             <div className="grid grid-cols-[100px_1fr] items-center gap-4">
-              <Label htmlFor="priority" className="text-right font-medium">
+              <Label htmlFor="reminder" className="text-right font-medium dark:text-white">
+                Reminder
+              </Label>
+              <Select
+                value={reminderMinutes}
+                onValueChange={setReminderMinutes}
+              >
+                <SelectTrigger className="border-amber-300 bg-white dark:bg-dincharya-muted dark:border-dincharya-border dark:text-white">
+                  <SelectValue placeholder="Set reminder" />
+                </SelectTrigger>
+                <SelectContent className="dark:bg-dincharya-text dark:border-dincharya-border">
+                  <SelectItem value="5">5 minutes before</SelectItem>
+                  <SelectItem value="15">15 minutes before</SelectItem>
+                  <SelectItem value="30">30 minutes before</SelectItem>
+                  <SelectItem value="60">1 hour before</SelectItem>
+                  <SelectItem value="120">2 hours before</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="grid grid-cols-[100px_1fr] items-center gap-4">
+              <Label htmlFor="priority" className="text-right font-medium dark:text-white">
                 Priority
               </Label>
               <Select
                 value={priority}
                 onValueChange={(value) => setPriority(value as "low" | "medium" | "high")}
               >
-                <SelectTrigger className="border-amber-300 bg-white">
+                <SelectTrigger className="border-amber-300 bg-white dark:bg-dincharya-muted dark:border-dincharya-border dark:text-white">
                   <SelectValue placeholder="Select priority" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="dark:bg-dincharya-text dark:border-dincharya-border">
                   <SelectItem value="low">Low</SelectItem>
                   <SelectItem value="medium">Medium</SelectItem>
                   <SelectItem value="high">High</SelectItem>
@@ -528,35 +587,41 @@ const TaskForm = ({ onTaskCreate, initialData, onSubmit, onCancel }: TaskFormPro
             </div>
             
             <div className="grid grid-cols-[100px_1fr] items-center gap-4">
-              <Label htmlFor="category" className="text-right font-medium">
+              <Label htmlFor="category" className="text-right font-medium dark:text-white">
                 Category
               </Label>
               <Select
                 value={category}
                 onValueChange={setCategory}
               >
-                <SelectTrigger className="border-amber-300 bg-white">
+                <SelectTrigger className="border-amber-300 bg-white dark:bg-dincharya-muted dark:border-dincharya-border dark:text-white">
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="dark:bg-dincharya-text dark:border-dincharya-border">
                   <SelectItem value="Work">Work</SelectItem>
                   <SelectItem value="Personal">Personal</SelectItem>
                   <SelectItem value="Home">Home</SelectItem>
                   <SelectItem value="Errands">Errands</SelectItem>
                   <SelectItem value="Health">Health</SelectItem>
+                  <SelectItem value="Breakfast">Breakfast</SelectItem>
+                  <SelectItem value="Lunch">Lunch</SelectItem>
+                  <SelectItem value="Dinner">Dinner</SelectItem>
+                  <SelectItem value="Exercise">Exercise</SelectItem>
+                  <SelectItem value="Study">Study</SelectItem>
+                  <SelectItem value="Meeting">Meeting</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             
             <div className="grid grid-cols-[100px_1fr] items-center gap-4">
-              <Label htmlFor="assignedTo" className="text-right font-medium">
+              <Label htmlFor="assignedTo" className="text-right font-medium dark:text-white">
                 Assign To
               </Label>
               <Input
                 id="assignedTo"
                 value={assignedTo}
                 onChange={(e) => setAssignedTo(e.target.value)}
-                className="border-amber-300 bg-white"
+                className="border-amber-300 bg-white dark:bg-dincharya-muted dark:border-dincharya-border dark:text-white"
                 placeholder="Enter email address or name"
               />
             </div>
