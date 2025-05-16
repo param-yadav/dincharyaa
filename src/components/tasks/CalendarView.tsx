@@ -152,6 +152,7 @@ const CalendarView = ({ tasks, onTaskCreate, onTaskUpdate }: CalendarViewProps) 
           initialData={selectedTask}
           onSubmit={handleFormSubmit}
           onCancel={handleFormCancel}
+          defaultDate={selectedDate}
         />
       </DrawerDialog>
     </div>
