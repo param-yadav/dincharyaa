@@ -162,6 +162,8 @@ export type Database = {
           id: string
           is_pinned: boolean | null
           priority: string | null
+          reminder_sent: boolean | null
+          reminder_time: string | null
           start_time: string
           title: string
           updated_at: string | null
@@ -178,6 +180,8 @@ export type Database = {
           id?: string
           is_pinned?: boolean | null
           priority?: string | null
+          reminder_sent?: boolean | null
+          reminder_time?: string | null
           start_time: string
           title: string
           updated_at?: string | null
@@ -194,6 +198,8 @@ export type Database = {
           id?: string
           is_pinned?: boolean | null
           priority?: string | null
+          reminder_sent?: boolean | null
+          reminder_time?: string | null
           start_time?: string
           title?: string
           updated_at?: string | null
