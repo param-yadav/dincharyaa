@@ -35,6 +35,7 @@ import { Task } from "@/hooks/use-tasks";
 import { useMediaQuery } from "@/hooks/use-mobile";
 import TaskAssignment from "./TaskAssignment";
 import { useTaskAssignments } from "@/hooks/use-task-assignments";
+import { useToast } from "@/hooks/use-toast";
 
 export interface TaskFormProps {
   onTaskCreate?: (task: Omit<Task, "id" | "user_id" | "created_at" | "updated_at">) => Promise<any>;
@@ -69,6 +70,7 @@ const TaskForm = ({ onTaskCreate, initialData, onSubmit, onCancel, defaultDate }
   
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const { assignTask } = useTaskAssignments();
+  const { toast } = useToast();
 
   // Initialize form data if editing an existing task
   useEffect(() => {

@@ -11,12 +11,16 @@ const TasksPage = () => {
   const [activeView, setActiveView] = useState("list");
   
   const handleTaskCreate = async (newTask: any) => {
-    return await createTask(newTask);
+    // Create the task and ignore the return value to match Promise<void>
+    await createTask(newTask);
+    return;
   };
   
   const handleTaskUpdate = async (updatedTask: any) => {
     const { id, ...rest } = updatedTask;
-    return await updateTask(id, rest);
+    // Update the task and ignore the return value to match Promise<void>
+    await updateTask(id, rest);
+    return;
   };
 
   return (

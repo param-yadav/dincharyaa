@@ -22,4 +22,7 @@ export const useMobile = () => {
   return useMediaQuery("(max-width: 768px)");
 };
 
+// Add an alias for consistent naming
+export const useIsMobile = useMobile;
+
 export default useMobile;

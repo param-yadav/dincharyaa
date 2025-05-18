@@ -47,7 +47,8 @@ export const useTaskAssignments = () => {
       if (error) throw error;
       
       if (data) {
-        setAssignments(data as TaskAssignment[]);
+        // Cast the JSON data to TaskAssignment[] with type assertion
+        setAssignments(data as unknown as TaskAssignment[]);
       } else {
         setAssignments([]);
       }
@@ -110,7 +111,8 @@ export const useTaskAssignments = () => {
         if (error) throw error;
         
         if (data) {
-          createdAssignments.push(data as TaskAssignment);
+          // Cast the return data to TaskAssignment
+          createdAssignments.push(data as unknown as TaskAssignment);
           
           // Create a notification using our RPC function
           await supabase
