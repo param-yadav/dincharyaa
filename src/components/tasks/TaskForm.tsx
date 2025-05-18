@@ -37,9 +37,9 @@ import TaskAssignment from "./TaskAssignment";
 import { useTaskAssignments } from "@/hooks/use-task-assignments";
 
 export interface TaskFormProps {
-  onTaskCreate?: (task: Omit<Task, "id" | "user_id" | "created_at" | "updated_at">) => void;
+  onTaskCreate?: (task: Omit<Task, "id" | "user_id" | "created_at" | "updated_at">) => Promise<any>;
   initialData?: Task | null;
-  onSubmit?: (task: Omit<Task, "id" | "user_id" | "created_at" | "updated_at">) => void;
+  onSubmit?: (task: Omit<Task, "id" | "user_id" | "created_at" | "updated_at">) => Promise<void>;
   onCancel?: () => void;
   defaultDate?: Date;
 }

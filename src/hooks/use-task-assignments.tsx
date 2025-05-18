@@ -14,6 +14,7 @@ export interface TaskAssignment {
   created_at: string;
   updated_at: string;
   rejection_reason?: string;
+  message?: string;
 }
 
 export interface AssignTaskParams {
@@ -38,12 +39,9 @@ export const useTaskAssignments = () => {
     try {
       setLoading(true);
       
-      // Fetch assignments where the user is either the assigner or assignee
+      // Using a custom RPC function that we'll create in the next SQL migration
       const { data, error } = await supabase
-        .from("task_assignments")
-        .select("*")
-        .or(`assigned_by.eq.${user.id},assigned_to.eq.${user.id}`)
-        .order("created_at", { ascending: false });
+        .rpc('get_user_task_assignments', { user_id: user.id });
 
       if (error) throw error;
       
@@ -95,34 +93,27 @@ export const useTaskAssignments = () => {
           assigneeId = userId;
         }
         
-        // Create the assignment record
+        // Create the assignment record using RPC function
         const { data, error } = await supabase
-          .from("task_assignments")
-          .insert({
-            task_id: task.id,
-            assigned_by: user.id,
-            assigned_to: assigneeId,
-            status: "pending",
-            message: message || null
-          })
-          .select()
-          .single();
+          .rpc('create_task_assignment', {
+            p_task_id: task.id,
+            p_assigned_by: user.id,
+            p_assigned_to: assigneeId,
+            p_message: message || null
+          });
         
         if (error) throw error;
         
         if (data) {
           assignments.push(data as unknown as TaskAssignment);
           
-          // Create a notification for the assignee
+          // Create a notification using RPC function
           await supabase
-            .from("notifications")
-            .insert({
-              user_id: assigneeId,
-              type: "task_assignment",
-              title: "New Task Assignment",
-              message: `You have been assigned a new task: ${task.title}`,
-              related_id: task.id,
-              read: false
+            .rpc('create_assignment_notification', {
+              p_user_id: assigneeId,
+              p_title: "New Task Assignment",
+              p_message: `You have been assigned a new task: ${task.title}`,
+              p_related_id: task.id
             });
         }
       }
@@ -150,64 +141,18 @@ export const useTaskAssignments = () => {
     if (!user) return false;
 
     try {
-      const status = accept ? "accepted" : "rejected";
-      
-      // Update the assignment status
+      // Using custom RPC function to respond to assignment
       const { data, error } = await supabase
-        .from("task_assignments")
-        .update({ 
-          status, 
-          rejection_reason: accept ? null : (rejectionReason || null),
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", assignmentId)
-        .eq("assigned_to", user.id) // Make sure the current user is the assignee
-        .select()
-        .single();
+        .rpc('respond_to_task_assignment', {
+          p_assignment_id: assignmentId,
+          p_accept: accept,
+          p_rejection_reason: rejectionReason || null
+        });
         
       if (error) throw error;
       
       if (!data) return false;
 
-      // Get task details to use in notifications
-      const { data: taskData } = await supabase
-        .from("tasks")
-        .select("*")
-        .eq("id", data.task_id)
-        .single();
-      
-      // If accepted, create a copy of the task for the assignee
-      if (accept && taskData) {
-        const newTask = {
-          title: taskData.title,
-          description: taskData.description,
-          start_time: taskData.start_time,
-          end_time: taskData.end_time,
-          priority: taskData.priority,
-          category: taskData.category,
-          assigned_by: data.assigned_by,
-          is_pinned: false,
-          completed: false,
-          user_id: user.id
-        };
-        
-        await supabase.from("tasks").insert(newTask);
-      }
-      
-      // Create a notification for the assigner
-      await supabase
-        .from("notifications")
-        .insert({
-          user_id: data.assigned_by,
-          type: "task_response",
-          title: accept ? "Task Accepted" : "Task Rejected",
-          message: accept 
-            ? `Your task assignment was accepted by ${user.email}`
-            : `Your task assignment was rejected by ${user.email}${rejectionReason ? `: ${rejectionReason}` : ''}`,
-          related_id: data.task_id,
-          read: false
-        });
-        
       toast({
         title: accept ? "Task Accepted" : "Task Rejected",
         description: accept ? "The task has been added to your tasks" : "The task assignment has been rejected",
@@ -231,15 +176,20 @@ export const useTaskAssignments = () => {
     if (user) {
       fetchAssignments();
       
-      // Subscribe to realtime updates for task_assignments
+      // Subscribe to realtime updates for notifications table as a proxy for assignments
       const channel = supabase
         .channel('task-assignments-changes')
         .on(
           'postgres_changes',
-          { event: '*', schema: 'public', table: 'task_assignments' },
+          { event: '*', schema: 'public', table: 'notifications' },
           (payload) => {
-            console.log('Real-time update for task assignments:', payload);
-            fetchAssignments();
+            // Only refresh if it's a task assignment notification
+            if (payload.new && (
+              (payload.new as any).type === 'task_assignment' || 
+              (payload.new as any).type === 'task_response'
+            )) {
+              fetchAssignments();
+            }
           }
         )
         .subscribe();
