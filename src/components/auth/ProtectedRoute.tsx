@@ -1,6 +1,6 @@
 
+import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth";
-import { useEffect } from "react";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -8,12 +8,6 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
-
-  useEffect(() => {
-    if (!loading && !user) {
-      window.location.href = "/auth";
-    }
-  }, [user, loading]);
 
   if (loading) {
     return (
@@ -24,7 +18,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   }
 
   if (!user) {
-    return null; // Will redirect in the useEffect
+    return <Navigate to="/auth" replace />;
   }
 
   return <>{children}</>;

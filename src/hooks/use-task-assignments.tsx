@@ -40,7 +40,7 @@ export const useTaskAssignments = () => {
     try {
       setLoading(true);
       
-      // Using our custom RPC function with a more specific query to avoid ambiguous columns
+      // Using our custom RPC function
       const { data, error } = await supabase
         .rpc('get_user_task_assignments', { user_id: user.id });
 

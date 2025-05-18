@@ -3,17 +3,18 @@ import React, { useEffect } from "react";
 import Sidebar from "./Sidebar";
 import { Toaster } from "@/components/ui/toaster";
 import { useAuth } from "@/hooks/use-auth";
+import { useNavigate } from "react-router-dom";
 import { NotificationToasts } from "@/components/ui/notification-toast";
 
 const MainLayout = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
+  const navigate = useNavigate();
   
   useEffect(() => {
     if (!loading && !user) {
-      // Use window.location instead of navigate
-      window.location.href = "/auth";
+      navigate("/sign-in");
     }
-  }, [user, loading]);
+  }, [user, loading, navigate]);
 
   if (loading) {
     return (

@@ -1,175 +1,273 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, Calendar, ListTodo, Users, Settings, HelpCircle, ChevronDown, ChevronUp, LogOut } from "lucide-react";
-import { useAuth } from "@/hooks/use-auth";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { useMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
+import { 
+  Calendar, 
+  List, 
+  Users, 
+  Clock, 
+  Timer, 
+  Watch, 
+  FileText,
+  FileChartColumn,
+  Settings,
+  HelpCircle,
+  Mail,
+  BellRing,
+  ChevronLeft,
+  ChevronRight,
+  User,
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useNotifications } from "@/hooks/use-notifications";
+import { 
+  Tooltip, 
+  TooltipContent, 
+  TooltipProvider, 
+  TooltipTrigger 
+} from "@/components/ui/tooltip";
+import { useAuth } from "@/hooks/use-auth";
 
-// Alias for backward compatibility
-const useIsMobile = useMobile;
+interface NavItemProps {
+  icon: React.ElementType;
+  label: string;
+  to: string;
+  isActive?: boolean;
+  isCollapsed?: boolean;
+  onClick?: () => void;
+  notification?: number;
+}
+
+const NavItem = ({ 
+  icon: Icon, 
+  label, 
+  to, 
+  isActive, 
+  isCollapsed, 
+  onClick, 
+  notification 
+}: NavItemProps) => {
+  const itemContent = (
+    <div className="relative w-full">
+      <Button
+        variant="ghost"
+        className={cn(
+          "w-full justify-start gap-3 px-3 transition-all duration-300",
+          isActive 
+            ? "bg-dincharya-primary/15 text-dincharya-primary font-medium dark:bg-dincharya-primary/30" 
+            : "hover:bg-dincharya-primary/5 text-dincharya-text dark:text-white/80 hover:dark:bg-dincharya-primary/20"
+        )}
+        onClick={onClick}
+      >
+        <Icon className="h-5 w-5" />
+        {!isCollapsed && <span>{label}</span>}
+      </Button>
+      
+      {notification !== undefined && notification > 0 && (
+        <span className={cn(
+          "absolute rounded-full bg-red-500 text-white text-xs flex items-center justify-center",
+          isCollapsed 
+            ? "top-1 right-1 min-w-[14px] h-[14px]" 
+            : "top-2 right-2 min-w-[18px] h-[18px] px-1"
+        )}>
+          {notification > 9 ? '9+' : notification}
+        </span>
+      )}
+    </div>
+  );
+
+  return isCollapsed ? (
+    <TooltipProvider delayDuration={300}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Link to={to} className="block w-full mb-1">
+            {itemContent}
+          </Link>
+        </TooltipTrigger>
+        <TooltipContent side="right">
+          <p>{label}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  ) : (
+    <Link to={to} className="block w-full mb-1">
+      {itemContent}
+    </Link>
+  );
+};
 
 const Sidebar = () => {
   const location = useLocation();
-  const { signOut, user } = useAuth();
-  const [isTeamExpanded, setIsTeamExpanded] = useState(false);
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const isMobile = useIsMobile();
+  const [collapsed, setCollapsed] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const { unreadCount } = useNotifications();
+  
+  // Reset collapse state based on screen size
+  useEffect(() => {
+    setCollapsed(isMobile);
+  }, [isMobile]);
 
-  const isActive = (path: string) => {
-    return location.pathname === path;
-  };
+  // Store collapsed state in localStorage
+  useEffect(() => {
+    const savedState = localStorage.getItem('sidebarCollapsed');
+    if (savedState !== null && !isMobile) {
+      setCollapsed(savedState === 'true');
+    }
+  }, [isMobile]);
+  
+  // Save collapsed state when it changes
+  useEffect(() => {
+    localStorage.setItem('sidebarCollapsed', collapsed.toString());
+  }, [collapsed]);
+  
+  const navItems = [
+    { id: "tasks", label: "Task List", icon: List, path: "/tasks", implemented: true },
+    { id: "calendar", label: "Calendar", icon: Calendar, path: "/scheduler", implemented: true },
+    { id: "team", label: "Team", icon: Users, path: "/team", implemented: true },
+    { id: "notes", label: "Notes", icon: FileText, path: "/notes", implemented: true },
+    { id: "timer", label: "Timer", icon: Timer, path: "/timer", implemented: true },
+    { id: "analytics", label: "Analytics", icon: FileChartColumn, path: "/analytics", implemented: true }
+  ];
 
+  const supportItems = [
+    { id: "profile", label: "Profile", icon: User, path: "/profile", implemented: true },
+    { id: "notifications", label: "Notifications", icon: BellRing, path: "/notifications", implemented: true, notification: unreadCount },
+    { id: "settings", label: "Settings", icon: Settings, path: "/settings", implemented: true },
+    { id: "help", label: "Help", icon: HelpCircle, path: "/help", implemented: false },
+    { id: "contact", label: "Contact", icon: Mail, path: "/contact", implemented: true }
+  ];
+
+  const isCollapsedCalc = collapsed && !hovered;
+  
   return (
-    <div className="flex flex-col h-screen w-64 bg-dincharya-background border-r border-dincharya-border dark:bg-dincharya-text/90 dark:border-dincharya-border">
-      {/* Logo and App Title */}
-      <div className="flex items-center justify-center h-16 border-b border-dincharya-border dark:border-dincharya-border p-4">
-        <span className="font-bold text-lg text-dincharya-text dark:text-white">
-          Dincharya
-        </span>
+    <div 
+      className={cn(
+        "relative h-full bg-white dark:bg-dincharya-text/90 border-r border-dincharya-muted/20 flex flex-col shadow-lg transition-all duration-300",
+        isCollapsedCalc ? "w-[70px]" : "w-64"
+      )}
+      onMouseEnter={() => !isMobile && setHovered(true)}
+      onMouseLeave={() => !isMobile && setHovered(false)}
+    >
+      {/* Collapse Toggle */}
+      <button 
+        className="absolute -right-3 top-20 h-6 w-6 rounded-full bg-dincharya-background border border-dincharya-muted/30 flex items-center justify-center z-10 shadow-md"
+        onClick={() => setCollapsed(!collapsed)}
+      >
+        {isCollapsedCalc ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
+      </button>
+
+      {/* Background Texture */}
+      <div className="absolute inset-0 opacity-5 dark:opacity-5 pointer-events-none">
+        <div className="w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGcgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIj48cGF0aCBmaWxsPSIjQjg0QzE0IiBkPSJNMzYgMzRoLTJWMTZoMnpNNDAgMzRoLTJWMTZoMnpNOCAzNEg2VjE2aDJ6TTEyIDM0aC0yVjE2aDJ6Ii8+PHBhdGggZD0iTTYwIDBoLTJ2NjBoMnpNNDIgMGgtMnY2MGgyeiIgZmlsbD0iI0I4NEMxNCIvPjxwYXRoIGQ9Ik01MCAwbC01MCA1MEw1MCA2MHoiIHN0cm9rZT0iI0I4NEMxNCIvPjxwYXRoIGQ9Ik01MCAwbC01MCA1MEw1MCA2MHpNMTYtOGwtMjUgMjVMNDAgNjZ6TTU4LTE3bC0yNSAyNUw4MiA1N3oiIHN0cm9rZT0iI0I4NEMxNCIvPjwvZz48L3N2Zz4=')]" />
       </div>
 
+      <div className={cn("p-4 flex items-center", isCollapsedCalc ? "justify-center" : "")}>
+        {isCollapsedCalc ? (
+          <div className="h-8 w-8 rounded-full bg-dincharya-primary/20 flex items-center justify-center">
+            <Clock className="h-5 w-5 text-dincharya-primary" />
+          </div>
+        ) : (
+          <h1 className="text-xl font-bold text-dincharya-primary flex items-center gap-2">
+            <div className="h-6 w-6 rounded-full bg-dincharya-primary/20 flex items-center justify-center">
+              <Clock className="h-4 w-4 text-dincharya-primary" />
+            </div>
+            Dincharya
+          </h1>
+        )}
+      </div>
+      
       {/* Main Navigation */}
-      <nav className="flex-1 p-4">
-        <ul className="space-y-2">
-          <li>
-            <Link
-              to="/home"
-              className={`flex items-center p-2 rounded-md hover:bg-dincharya-muted/50 dark:hover:bg-dincharya-muted/20 ${
-                isActive("/home")
-                  ? "bg-dincharya-muted/50 dark:bg-dincharya-muted/20"
-                  : ""
-              }`}
-            >
-              <Home className="h-4 w-4 mr-2 text-dincharya-primary" />
-              <span className="text-sm font-medium text-dincharya-text dark:text-white">
-                Home
-              </span>
-            </Link>
-          </li>
-          <li>
-            <Link
-              to="/tasks"
-              className={`flex items-center p-2 rounded-md hover:bg-dincharya-muted/50 dark:hover:bg-dincharya-muted/20 ${
-                isActive("/tasks")
-                  ? "bg-dincharya-muted/50 dark:bg-dincharya-muted/20"
-                  : ""
-              }`}
-            >
-              <ListTodo className="h-4 w-4 mr-2 text-dincharya-primary" />
-              <span className="text-sm font-medium text-dincharya-text dark:text-white">
-                Tasks
-              </span>
-            </Link>
-          </li>
-          <li>
-            <Link
-              to="/scheduler"
-              className={`flex items-center p-2 rounded-md hover:bg-dincharya-muted/50 dark:hover:bg-dincharya-muted/20 ${
-                isActive("/scheduler")
-                  ? "bg-dincharya-muted/50 dark:bg-dincharya-muted/20"
-                  : ""
-              }`}
-            >
-              <Calendar className="h-4 w-4 mr-2 text-dincharya-primary" />
-              <span className="text-sm font-medium text-dincharya-text dark:text-white">
-                Scheduler
-              </span>
-            </Link>
-          </li>
-          <li>
-            <Link
-              to="/team"
-              className={`flex items-center justify-between p-2 rounded-md hover:bg-dincharya-muted/50 dark:hover:bg-dincharya-muted/20 ${
-                isActive("/team") || isTeamExpanded
-                  ? "bg-dincharya-muted/50 dark:bg-dincharya-muted/20"
-                  : ""
-              }`}
-              onClick={() => setIsTeamExpanded(!isTeamExpanded)}
-            >
-              <div className="flex items-center">
-                <Users className="h-4 w-4 mr-2 text-dincharya-primary" />
-                <span className="text-sm font-medium text-dincharya-text dark:text-white">
-                  Team
-                </span>
-              </div>
-              {isTeamExpanded ? (
-                <ChevronUp className="h-4 w-4 text-dincharya-text dark:text-white" />
-              ) : (
-                <ChevronDown className="h-4 w-4 text-dincharya-text dark:text-white" />
-              )}
-            </Link>
-          </li>
-          {isTeamExpanded && (
-            <ul className="ml-4 space-y-2">
-              <li>
-                <Link
-                  to="/team"
-                  className={`flex items-center p-2 rounded-md hover:bg-dincharya-muted/50 dark:hover:bg-dincharya-muted/20 ${
-                    isActive("/team")
-                      ? "bg-dincharya-muted/50 dark:bg-dincharya-muted/20"
-                      : ""
-                  }`}
-                >
-                  <span className="text-sm font-medium text-dincharya-text dark:text-white">
-                    Manage Team
-                  </span>
-                </Link>
-              </li>
-            </ul>
+      <div className="flex-1 p-3 overflow-auto">
+        <div className="mb-4">
+          {!isCollapsedCalc && (
+            <p className="text-xs uppercase text-dincharya-text/50 dark:text-white/50 font-semibold ml-3 mb-2">
+              Main
+            </p>
           )}
-        </ul>
-      </nav>
-
-      {/* Bottom Section - User Profile and Settings */}
-      <div className="p-4 border-t border-dincharya-border dark:border-dincharya-border">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="flex h-8 w-full items-center justify-between rounded-md px-2 text-sm font-medium hover:bg-dincharya-muted/50 focus:bg-dincharya-muted/50 data-[state=open]:bg-dincharya-muted/50 dark:hover:bg-dincharya-muted/20 dark:focus:bg-dincharya-muted/20 dark:data-[state=open]:bg-dincharya-muted/20">
-              <div className="flex items-center gap-2">
-                <Avatar className="h-6 w-6">
-                  <AvatarImage src={user?.user_metadata?.avatar_url} />
-                  <AvatarFallback>{user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
-                </Avatar>
-                <span className="text-sm font-medium text-dincharya-text dark:text-white">
-                  {user?.user_metadata?.full_name || user?.email?.split('@')[0]}
-                </span>
-              </div>
-              <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            
+            return (
+              <NavItem
+                key={item.id}
+                icon={item.icon}
+                label={item.label}
+                to={item.path}
+                isActive={isActive}
+                isCollapsed={isCollapsedCalc}
+                onClick={!item.implemented ? () => toast({
+                  title: "Coming Soon",
+                  description: `The ${item.label} feature is under development`,
+                }) : undefined}
+              />
+            );
+          })}
+        </div>
+        
+        {/* Support Section */}
+        <div>
+          {!isCollapsedCalc && (
+            <p className="text-xs uppercase text-dincharya-text/50 dark:text-white/50 font-semibold ml-3 mb-2">
+              Support
+            </p>
+          )}
+          {supportItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            
+            return (
+              <NavItem
+                key={item.id}
+                icon={item.icon}
+                label={item.label}
+                to={item.path}
+                isActive={isActive}
+                isCollapsed={isCollapsedCalc}
+                notification={item.notification}
+                onClick={!item.implemented ? () => toast({
+                  title: "Coming Soon",
+                  description: `The ${item.label} feature is under development`,
+                }) : undefined}
+              />
+            );
+          })}
+        </div>
+      </div>
+      
+      {/* User Section */}
+      <div className="p-3 border-t border-dincharya-muted/20">
+        {user ? (
+          <Link to="/profile">
+            <Button 
+              variant="outline" 
+              className={cn(
+                "w-full flex items-center justify-center gap-2", 
+                isCollapsedCalc && "px-0"
+              )}
+            >
+              <User className="h-4 w-4" /> 
+              {!isCollapsedCalc && "My Profile"}
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
-            <DropdownMenuItem asChild>
-              <Link to="/profile">
-                Profile
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link to="/settings">
-                Settings
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link to="/help">
-                Help
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => signOut()}>
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Log out</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          </Link>
+        ) : (
+          <Link to="/auth">
+            <Button 
+              variant="outline" 
+              className={cn(
+                "w-full flex items-center justify-center gap-2", 
+                isCollapsedCalc && "px-0"
+              )}
+            >
+              <User className="h-4 w-4" /> 
+              {!isCollapsedCalc && "Sign In"}
+            </Button>
+          </Link>
+        )}
       </div>
     </div>
   );
