@@ -2,7 +2,6 @@
 import { useEffect, useState, createContext, useContext } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 
 type AuthContextType = {
@@ -20,8 +19,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const navigate = useNavigate();
-
+  
   useEffect(() => {
     // First set up the auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -58,7 +56,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         description: "Welcome back to Dincharya!",
       });
       
-      navigate("/tasks");
+      // Use window.location for navigation instead of useNavigate
+      window.location.href = "/tasks";
     } catch (error: any) {
       toast({
         title: "Sign in failed",
@@ -93,7 +92,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
-      navigate("/auth");
+      // Use window.location for navigation instead of useNavigate
+      window.location.href = "/auth";
       toast({
         title: "Signed out successfully",
       });
