@@ -38,6 +38,7 @@ export interface TaskFormProps {
   initialData?: Task | null;
   onSubmit?: (task: Omit<Task, "id" | "user_id" | "created_at" | "updated_at">) => void;
   onCancel?: () => void;
+  defaultDate?: Date; // Added defaultDate prop
 }
 
 const parseTimeString = (timeString: string): { hours: number; minutes: number } => {
@@ -50,11 +51,11 @@ const formatTimeForInput = (date: Date | null): string => {
   return format(date, "HH:mm");
 };
 
-const TaskForm = ({ onTaskCreate, initialData, onSubmit, onCancel }: TaskFormProps) => {
+const TaskForm = ({ onTaskCreate, initialData, onSubmit, onCancel, defaultDate }: TaskFormProps) => {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [startDate, setStartDate] = useState<Date | undefined>(new Date());
+  const [startDate, setStartDate] = useState<Date | undefined>(defaultDate || new Date());
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("");
   const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
@@ -97,8 +98,11 @@ const TaskForm = ({ onTaskCreate, initialData, onSubmit, onCancel }: TaskFormPro
         const diffMinutes = Math.round((startTime - reminderTime) / 60000);
         setReminderMinutes(diffMinutes.toString());
       }
+    } else if (defaultDate) {
+      // Use the defaultDate if provided and no initialData
+      setStartDate(defaultDate);
     }
-  }, [initialData]);
+  }, [initialData, defaultDate]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
