@@ -139,45 +139,54 @@ const TaskForm = ({ onTaskCreate, initialData, onSubmit, onCancel, defaultDate }
       reminder_sent: false
     };
     
-    // Handle task creation or update
-    if (onTaskCreate) {
-      const createdTask = await onTaskCreate(newTask);
-      
-      // If there are assignees and the task was created successfully, assign the task
-      if (assignees.length > 0 && createdTask && isAssigning) {
-        await assignTask({
-          task: createdTask as Task,
-          assignees,
-          message: assignmentMessage
-        });
+    try {
+      // Handle task creation or update
+      if (onTaskCreate) {
+        const createdTask = await onTaskCreate(newTask);
+        
+        // If there are assignees and the task was created successfully, assign the task
+        if (assignees.length > 0 && createdTask && isAssigning) {
+          await assignTask({
+            task: createdTask as Task,
+            assignees,
+            message: assignmentMessage
+          });
+        }
+        
+        setOpen(false);
+      } else if (onSubmit) {
+        await onSubmit(newTask);
+        
+        // If there are assignees and this is an existing task, assign the task
+        if (assignees.length > 0 && initialData && isAssigning) {
+          await assignTask({
+            task: initialData,
+            assignees,
+            message: assignmentMessage
+          });
+        }
       }
       
-      setOpen(false);
-    } else if (onSubmit) {
-      await onSubmit(newTask);
-      
-      // If there are assignees and this is an existing task, assign the task
-      if (assignees.length > 0 && initialData && isAssigning) {
-        await assignTask({
-          task: initialData,
-          assignees,
-          message: assignmentMessage
-        });
-      }
+      // Reset form
+      setTitle("");
+      setDescription("");
+      setStartDate(new Date());
+      setStartTime("09:00");
+      setEndTime("");
+      setPriority("medium");
+      setCategory("Work");
+      setReminderMinutes("15");
+      setAssignees([]);
+      setAssignmentMessage("");
+      setIsAssigning(false);
+    } catch (error) {
+      console.error("Error in task form submission:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save the task. Please try again.",
+        variant: "destructive",
+      });
     }
-    
-    // Reset form
-    setTitle("");
-    setDescription("");
-    setStartDate(new Date());
-    setStartTime("09:00");
-    setEndTime("");
-    setPriority("medium");
-    setCategory("Work");
-    setReminderMinutes("15");
-    setAssignees([]);
-    setAssignmentMessage("");
-    setIsAssigning(false);
   };
 
   const handleCancel = () => {

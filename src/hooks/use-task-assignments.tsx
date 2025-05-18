@@ -47,7 +47,7 @@ export const useTaskAssignments = () => {
       if (error) throw error;
       
       if (data) {
-        setAssignments(data as unknown as TaskAssignment[]);
+        setAssignments(data as TaskAssignment[]);
       } else {
         setAssignments([]);
       }
@@ -110,7 +110,7 @@ export const useTaskAssignments = () => {
         if (error) throw error;
         
         if (data) {
-          createdAssignments.push(data as unknown as TaskAssignment);
+          createdAssignments.push(data as TaskAssignment);
           
           // Create a notification using our RPC function
           await supabase
