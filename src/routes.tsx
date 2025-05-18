@@ -29,7 +29,7 @@ const router = createBrowserRouter([
   {
     path: '/',
     element: <MainLayout>
-      {/* Child routes will be rendered here */}
+      <Index />
     </MainLayout>,
     children: [
       { index: true, element: <Index /> },
@@ -47,6 +47,7 @@ const router = createBrowserRouter([
       <ProtectedRoute>
         <Layout showSidebar={true}>
           {/* Child routes will be rendered here */}
+          <HomePage />
         </Layout>
       </ProtectedRoute>
     ),
