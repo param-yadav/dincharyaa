@@ -28,7 +28,9 @@ import HelpPage from '@/pages/HelpPage';
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <MainLayout />,
+    element: <MainLayout>
+      {/* Child routes will be rendered here */}
+    </MainLayout>,
     children: [
       { index: true, element: <Index /> },
       { path: 'about', element: <AboutPage /> },
