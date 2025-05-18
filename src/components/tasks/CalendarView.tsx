@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
@@ -9,8 +10,8 @@ import { Task } from "@/hooks/use-tasks";
 
 interface CalendarViewProps {
   tasks: Task[];
-  onTaskCreate: (task: Omit<Task, "id" | "user_id" | "created_at" | "updated_at">) => void;
-  onTaskUpdate: (task: Task) => void;
+  onTaskCreate: (task: Omit<Task, "id" | "user_id" | "created_at" | "updated_at">) => Promise<void>;
+  onTaskUpdate: (task: Task) => Promise<void>;
 }
 
 const CalendarView = ({ tasks, onTaskCreate, onTaskUpdate }: CalendarViewProps) => {
@@ -42,17 +43,21 @@ const CalendarView = ({ tasks, onTaskCreate, onTaskUpdate }: CalendarViewProps) 
     setIsFormOpen(true);
   };
 
-  const handleFormSubmit = (task: Omit<Task, "id" | "user_id" | "created_at" | "updated_at">) => {
-    if (mode === "create") {
-      onTaskCreate(task);
-    } else if (selectedTask) {
-      onTaskUpdate({
-        ...selectedTask,
-        ...task
-      });
+  const handleFormSubmit = async (task: Omit<Task, "id" | "user_id" | "created_at" | "updated_at">) => {
+    try {
+      if (mode === "create") {
+        await onTaskCreate(task);
+      } else if (selectedTask) {
+        await onTaskUpdate({
+          ...selectedTask,
+          ...task
+        });
+      }
+      
+      setIsFormOpen(false);
+    } catch (error) {
+      console.error("Error handling task form submit:", error);
     }
-    
-    setIsFormOpen(false);
   };
 
   const handleFormCancel = () => {

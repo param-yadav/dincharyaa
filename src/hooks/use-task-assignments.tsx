@@ -15,6 +15,7 @@ export interface TaskAssignment {
   updated_at: string;
   rejection_reason?: string;
   message?: string;
+  task?: Task;
 }
 
 export interface AssignTaskParams {
@@ -39,13 +40,17 @@ export const useTaskAssignments = () => {
     try {
       setLoading(true);
       
-      // Using a custom RPC function that we'll create in the next SQL migration
+      // Using our custom RPC function
       const { data, error } = await supabase
         .rpc('get_user_task_assignments', { user_id: user.id });
 
       if (error) throw error;
       
-      setAssignments(data || []);
+      if (data) {
+        setAssignments(data as unknown as TaskAssignment[]);
+      } else {
+        setAssignments([]);
+      }
     } catch (error: any) {
       console.error("Error fetching task assignments:", error);
       toast({
@@ -59,7 +64,7 @@ export const useTaskAssignments = () => {
   };
 
   // Assign a task to multiple users
-  const assignTask = async ({ task, assignees, message }: AssignTaskParams) => {
+  const assignTask = async ({ task, assignees, message }: AssignTaskParams): Promise<TaskAssignment[]> => {
     if (!user) {
       toast({
         title: "Authentication Required",
@@ -70,7 +75,7 @@ export const useTaskAssignments = () => {
     }
 
     try {
-      const assignments: TaskAssignment[] = [];
+      const createdAssignments: TaskAssignment[] = [];
 
       // Create an assignment record for each assignee
       for (const assignee of assignees) {
@@ -79,7 +84,7 @@ export const useTaskAssignments = () => {
         
         if (assignee.includes('@')) {
           const { data: userId, error: lookupError } = await supabase
-            .rpc("find_user_id_by_email", { email: assignee });
+            .rpc('find_user_id_by_email', { email: assignee });
           
           if (lookupError || !userId) {
             toast({
@@ -93,7 +98,7 @@ export const useTaskAssignments = () => {
           assigneeId = userId;
         }
         
-        // Create the assignment record using RPC function
+        // Create the assignment record using our RPC function
         const { data, error } = await supabase
           .rpc('create_task_assignment', {
             p_task_id: task.id,
@@ -105,9 +110,9 @@ export const useTaskAssignments = () => {
         if (error) throw error;
         
         if (data) {
-          assignments.push(data as unknown as TaskAssignment);
+          createdAssignments.push(data as unknown as TaskAssignment);
           
-          // Create a notification using RPC function
+          // Create a notification using our RPC function
           await supabase
             .rpc('create_assignment_notification', {
               p_user_id: assigneeId,
@@ -120,11 +125,11 @@ export const useTaskAssignments = () => {
 
       toast({
         title: "Task Assigned",
-        description: `Task assigned to ${assignments.length} ${assignments.length === 1 ? 'user' : 'users'}`,
+        description: `Task assigned to ${createdAssignments.length} ${createdAssignments.length === 1 ? 'user' : 'users'}`,
       });
       
       await fetchAssignments();
-      return assignments;
+      return createdAssignments;
     } catch (error: any) {
       console.error("Error assigning task:", error);
       toast({
@@ -137,11 +142,11 @@ export const useTaskAssignments = () => {
   };
 
   // Respond to a task assignment (accept or reject)
-  const respondToAssignment = async (assignmentId: string, accept: boolean, rejectionReason?: string) => {
+  const respondToAssignment = async (assignmentId: string, accept: boolean, rejectionReason?: string): Promise<boolean> => {
     if (!user) return false;
 
     try {
-      // Using custom RPC function to respond to assignment
+      // Using our custom RPC function to respond to assignment
       const { data, error } = await supabase
         .rpc('respond_to_task_assignment', {
           p_assignment_id: assignmentId,
@@ -151,7 +156,7 @@ export const useTaskAssignments = () => {
         
       if (error) throw error;
       
-      if (!data) return false;
+      if (data === null) return false;
 
       toast({
         title: accept ? "Task Accepted" : "Task Rejected",

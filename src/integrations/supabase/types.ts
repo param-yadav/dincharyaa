@@ -150,6 +150,50 @@ export type Database = {
         }
         Relationships: []
       }
+      task_assignments: {
+        Row: {
+          assigned_by: string
+          assigned_to: string
+          created_at: string
+          id: string
+          message: string | null
+          rejection_reason: string | null
+          status: string
+          task_id: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_by: string
+          assigned_to: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          rejection_reason?: string | null
+          status?: string
+          task_id: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_by?: string
+          assigned_to?: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          rejection_reason?: string | null
+          status?: string
+          task_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_assignments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           assigned_to: string | null
@@ -272,6 +316,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_assignment_notification: {
+        Args: {
+          p_user_id: string
+          p_title: string
+          p_message: string
+          p_related_id: string
+        }
+        Returns: undefined
+      }
+      create_task_assignment: {
+        Args: {
+          p_task_id: string
+          p_assigned_by: string
+          p_assigned_to: string
+          p_message?: string
+        }
+        Returns: Json
+      }
       create_tasks_from_schedule: {
         Args: { schedule_id: string; schedule_title: string }
         Returns: undefined
@@ -279,6 +341,18 @@ export type Database = {
       find_user_id_by_email: {
         Args: { email: string }
         Returns: string
+      }
+      get_user_task_assignments: {
+        Args: { user_id: string }
+        Returns: Json[]
+      }
+      respond_to_task_assignment: {
+        Args: {
+          p_assignment_id: string
+          p_accept: boolean
+          p_rejection_reason?: string
+        }
+        Returns: boolean
       }
     }
     Enums: {

@@ -30,7 +30,7 @@ import TaskForm from "./TaskForm";
 
 interface TaskCardProps {
   task: Task;
-  onUpdate?: (task: Task) => void;
+  onUpdate?: (task: Task) => Promise<void>;
   onDelete?: (id: string) => void;
   onToggleComplete?: (id: string, currentStatus: boolean) => void;
   onTogglePin?: (id: string, currentStatus: boolean) => void;
@@ -73,14 +73,23 @@ const TaskCard = ({ task, onUpdate, onDelete, onToggleComplete, onTogglePin, onE
     }
   };
 
-  const handleTaskUpdate = (updatedTask: Omit<Task, "id" | "user_id" | "created_at" | "updated_at">) => {
+  const handleTaskUpdate = async (updatedTask: Omit<Task, "id" | "user_id" | "created_at" | "updated_at">) => {
     if (onUpdate) {
-      onUpdate({
-        ...task,
-        ...updatedTask
-      });
+      try {
+        await onUpdate({
+          ...task,
+          ...updatedTask
+        });
+        setIsEditOpen(false);
+      } catch (error) {
+        console.error("Error updating task:", error);
+        toast({
+          title: "Error",
+          description: "Failed to update task",
+          variant: "destructive",
+        });
+      }
     }
-    setIsEditOpen(false);
   };
 
   const handleTaskCancel = () => {

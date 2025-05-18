@@ -102,7 +102,7 @@ const TaskAssignmentList: React.FC<TaskAssignmentListProps> = ({
   return (
     <div className="space-y-4">
       {filteredAssignments.map((assignment) => {
-        const task = getTaskForAssignment(assignment.task_id);
+        const task = assignment.task || getTaskForAssignment(assignment.task_id);
         const isPending = assignment.status === "pending";
         
         return (
