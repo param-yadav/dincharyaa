@@ -1,63 +1,57 @@
 
-import { useState, useEffect } from "react";
-import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
+import React from "react";
+import { Drawer, DrawerClose, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useMediaQuery } from "@/hooks/use-mobile";
 
 interface DrawerDialogProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
-  description?: string;
   children: React.ReactNode;
 }
 
-export const DrawerDialog = ({
+export const DrawerDialog: React.FC<DrawerDialogProps> = ({
   isOpen,
   onClose,
   title,
-  description,
   children,
-}: DrawerDialogProps) => {
-  const [open, setOpen] = useState(isOpen);
-  const isMobile = useIsMobile();
+}) => {
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
-  useEffect(() => {
-    setOpen(isOpen);
-  }, [isOpen]);
-
-  const handleClose = () => {
-    setOpen(false);
-    onClose();
-  };
+  if (isDesktop) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-[500px] max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{title}</DialogTitle>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-4 top-4 rounded-sm"
+              onClick={onClose}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </DialogHeader>
+          <div className="py-4">{children}</div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
-    <Drawer open={open} onOpenChange={setOpen} onClose={handleClose}>
-      <DrawerContent className="max-w-[95%] sm:max-w-[600px] mx-auto rounded-t-xl">
-        <DrawerHeader className="border-b border-border relative">
-          <DrawerTitle className="text-center">{title}</DrawerTitle>
-          {description && <DrawerDescription>{description}</DrawerDescription>}
-          <DrawerClose className="absolute right-4 top-4" onClick={handleClose}>
+    <Drawer open={isOpen} onOpenChange={onClose}>
+      <DrawerContent className="max-h-[85vh] overflow-y-auto">
+        <DrawerHeader className="border-b">
+          <DrawerTitle>{title}</DrawerTitle>
+          <DrawerClose className="absolute right-4 top-4">
             <X className="h-4 w-4" />
           </DrawerClose>
         </DrawerHeader>
-        <div className="p-4 max-h-[70vh] overflow-auto">
-          {children}
-        </div>
-        <DrawerFooter className="border-t border-border">
-          <Button variant="ghost" onClick={handleClose}>
-            Close
-          </Button>
-        </DrawerFooter>
+        <div className="p-4 pb-8">{children}</div>
       </DrawerContent>
     </Drawer>
   );

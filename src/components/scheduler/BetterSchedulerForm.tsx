@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -124,7 +123,7 @@ const BetterSchedulerForm = ({ onSubmit, onCancel, loading, initialData }: Sched
   ];
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 dark:text-white">
+    <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto">
       <div className="space-y-4">
         <div>
           <Label htmlFor="title" className="text-base font-medium">
