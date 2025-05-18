@@ -1,3 +1,4 @@
+
 import React, { useEffect } from "react";
 import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
@@ -28,9 +29,6 @@ import HelpPage from "@/pages/HelpPage";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
 
-// Auth provider
-import { AuthProvider } from "@/hooks/use-auth";
-
 // Create router
 const router = createBrowserRouter([
   {
@@ -50,7 +48,9 @@ const router = createBrowserRouter([
     path: "/",
     element: (
       <ProtectedRoute>
-        <Layout />
+        <Layout showSidebar={true}>
+          {/* Child routes will be rendered here */}
+        </Layout>
       </ProtectedRoute>
     ),
     children: [

@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { FileText, Plus, Search, Edit, Trash2 } from "lucide-react";
-import { NoteEditor } from "@/components/notes/NoteEditor";
+import NoteEditor from "@/components/notes/NoteEditor";
 import ReactMarkdown from 'react-markdown';
 import { Database } from "@/integrations/supabase/types";
 

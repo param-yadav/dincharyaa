@@ -1,8 +1,10 @@
+
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Home, Calendar, ListTodo, Users, Settings, HelpCircle, ChevronDown, ChevronUp, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,6 +13,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useMobile } from "@/hooks/use-mobile";
+
+// Alias for backward compatibility
+const useIsMobile = useMobile;
 
 const Sidebar = () => {
   const location = useLocation();
