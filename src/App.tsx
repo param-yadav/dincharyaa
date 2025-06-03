@@ -1,107 +1,167 @@
 
 import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import HomePage from "./pages/HomePage";
+import { useEffect } from "react";
+import Index from "./pages/Index";
 import TasksPage from "./pages/TasksPage";
-import NotFound from "./pages/NotFound";
-import Layout from "./components/layout/Layout";
-import TermsPage from "./pages/TermsPage";
-import FeedbackPage from "./pages/FeedbackPage";
+import TimerPage from "./pages/TimerPage";
+import NotesPage from "./pages/NotesPage";
+import AnalyticsPage from "./pages/AnalyticsPage";
+import SettingsPage from "./pages/SettingsPage";
+import ProfilePage from "./pages/ProfilePage";
+import SchedulerPage from "./pages/SchedulerPage";
+import TeamPage from "./pages/TeamPage";
+import NotificationsPage from "./pages/NotificationsPage";
 import AboutPage from "./pages/AboutPage";
 import ContactPage from "./pages/ContactPage";
+import TermsPage from "./pages/TermsPage";
 import AuthPage from "./pages/AuthPage";
-import { AuthProvider } from "./hooks/use-auth";
+import FeedbackPage from "./pages/FeedbackPage";
+import HelpPage from "./pages/HelpPage";
+import HomePage from "./pages/HomePage";
+import NotFound from "./pages/NotFound";
+import Layout from "./components/layout/Layout";
+import MainLayout from "./components/layout/MainLayout";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
-import AnalyticsPage from "./pages/AnalyticsPage";
-import TeamPage from "./pages/TeamPage";
-import SettingsPage from "./pages/SettingsPage";
-import SchedulerPage from "./pages/SchedulerPage";
-import NotesPage from "./pages/NotesPage";
-import TimerPage from "./pages/TimerPage";
-import ProfilePage from "./pages/ProfilePage";
-import NotificationsPage from "./pages/NotificationsPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      refetchOnWindowFocus: false,
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      retry: 1,
     },
   },
 });
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <BrowserRouter>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <Routes>
-            <Route path="/" element={<Layout><HomePage /></Layout>} />
-            <Route path="/auth" element={<AuthPage />} />
-            
-            {/* Protected routes */}
-            <Route path="/tasks" element={
-              <ProtectedRoute>
-                <Layout><TasksPage /></Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/analytics" element={
-              <ProtectedRoute>
-                <Layout><AnalyticsPage /></Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/team" element={
-              <ProtectedRoute>
-                <Layout><TeamPage /></Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/settings" element={
-              <ProtectedRoute>
-                <Layout><SettingsPage /></Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/scheduler" element={
-              <ProtectedRoute>
-                <Layout><SchedulerPage /></Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/notes" element={
-              <ProtectedRoute>
-                <Layout><NotesPage /></Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/timer" element={
-              <ProtectedRoute>
-                <Layout><TimerPage /></Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/profile" element={
-              <ProtectedRoute>
-                <Layout><ProfilePage /></Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/notifications" element={
-              <ProtectedRoute>
-                <Layout><NotificationsPage /></Layout>
-              </ProtectedRoute>
-            } />
-            
-            {/* Public routes */}
-            <Route path="/terms" element={<Layout><TermsPage /></Layout>} />
-            <Route path="/feedback" element={<Layout><FeedbackPage /></Layout>} />
-            <Route path="/about" element={<Layout><AboutPage /></Layout>} />
-            <Route path="/contact" element={<Layout><ContactPage /></Layout>} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </TooltipProvider>
-      </AuthProvider>
-    </BrowserRouter>
-  </QueryClientProvider>
-);
+function App() {
+  // Apply theme on app load
+  useEffect(() => {
+    const savedSettings = localStorage.getItem('userSettings');
+    if (savedSettings) {
+      const settings = JSON.parse(savedSettings);
+      if (settings.theme) {
+        if (settings.theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        } else if (settings.theme === 'light') {
+          document.documentElement.classList.remove('dark');
+        } else if (settings.theme === 'system') {
+          const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (prefersDark) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        }
+      }
+    }
+  }, []);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <Router>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/" element={<Layout><Index /></Layout>} />
+          <Route path="/about" element={<Layout><AboutPage /></Layout>} />
+          <Route path="/contact" element={<Layout><ContactPage /></Layout>} />
+          <Route path="/terms" element={<Layout><TermsPage /></Layout>} />
+          <Route path="/auth" element={<Layout showSidebar={false}><AuthPage /></Layout>} />
+          <Route path="/sign-in" element={<Layout showSidebar={false}><AuthPage /></Layout>} />
+          
+          {/* Protected routes */}
+          <Route path="/home" element={
+            <ProtectedRoute>
+              <MainLayout>
+                <HomePage />
+              </MainLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/tasks" element={
+            <ProtectedRoute>
+              <MainLayout>
+                <TasksPage />
+              </MainLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/timer" element={
+            <ProtectedRoute>
+              <MainLayout>
+                <TimerPage />
+              </MainLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/notes" element={
+            <ProtectedRoute>
+              <MainLayout>
+                <NotesPage />
+              </MainLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/analytics" element={
+            <ProtectedRoute>
+              <MainLayout>
+                <AnalyticsPage />
+              </MainLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/settings" element={
+            <ProtectedRoute>
+              <MainLayout>
+                <SettingsPage />
+              </MainLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <MainLayout>
+                <ProfilePage />
+              </MainLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/scheduler" element={
+            <ProtectedRoute>
+              <MainLayout>
+                <SchedulerPage />
+              </MainLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/team" element={
+            <ProtectedRoute>
+              <MainLayout>
+                <TeamPage />
+              </MainLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/notifications" element={
+            <ProtectedRoute>
+              <MainLayout>
+                <NotificationsPage />
+              </MainLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/feedback" element={
+            <ProtectedRoute>
+              <MainLayout>
+                <FeedbackPage />
+              </MainLayout>
+            </ProtectedRoute>
+          } />
+          <Route path="/help" element={
+            <ProtectedRoute>
+              <MainLayout>
+                <HelpPage />
+              </MainLayout>
+            </ProtectedRoute>
+          } />
+          
+          {/* Catch all route for 404 */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+        <Toaster />
+      </Router>
+    </QueryClientProvider>
+  );
+}
 
 export default App;

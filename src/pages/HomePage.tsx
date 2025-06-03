@@ -1,79 +1,77 @@
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, CheckSquare, Clock, Pin, ArrowRight, Plus, BarChart3 } from "lucide-react";
+import { Calendar, CheckSquare, Clock, Pin, ArrowRight, BarChart3 } from "lucide-react";
 import { format } from "date-fns";
 import { useAuth } from "@/hooks/use-auth";
 import { useTasks, Task } from "@/hooks/use-tasks";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
-import TaskForm from "@/components/tasks/TaskForm";
 import { Badge } from "@/components/ui/badge";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
 
 const HomePage = () => {
   const { user } = useAuth();
-  const { tasks, toggleCompleteTask, togglePinTask, loading } = useTasks();
+  const { tasks, toggleCompleteTask, loading } = useTasks();
   const navigate = useNavigate();
+  const [localTasks, setLocalTasks] = useState<Task[]>([]);
   
-  // Get today's tasks
+  // Update local tasks when tasks change
+  useEffect(() => {
+    setLocalTasks(tasks);
+  }, [tasks]);
+  
+  // Get today's date
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
-  const todayTasks = tasks.filter(task => {
-    const taskDate = new Date(task.start_time);
-    taskDate.setHours(0, 0, 0, 0);
-    return taskDate.getTime() === today.getTime();
-  }).slice(0, 5); // Limit to 5 tasks
+  // Memoized calculations to prevent recalculation
+  const todayTasks = React.useMemo(() => {
+    return localTasks.filter(task => {
+      const taskDate = new Date(task.start_time);
+      taskDate.setHours(0, 0, 0, 0);
+      return taskDate.getTime() === today.getTime();
+    }).slice(0, 5);
+  }, [localTasks, today]);
   
-  // Get pinned tasks
-  const pinnedTasks = tasks.filter(task => task.is_pinned).slice(0, 3);
-  
-  // Get upcoming tasks (next 7 days)
-  const nextWeek = new Date();
-  nextWeek.setDate(nextWeek.getDate() + 7);
-  
-  const upcomingTasks = tasks.filter(task => {
-    const taskDate = new Date(task.start_time);
-    return taskDate > today && taskDate <= nextWeek;
-  }).slice(0, 3);
+  const pinnedTasks = React.useMemo(() => {
+    return localTasks.filter(task => task.is_pinned).slice(0, 3);
+  }, [localTasks]);
   
   // Quick stats
-  const completedTasks = tasks.filter(task => task.completed).length;
-  const pendingTasks = tasks.filter(task => !task.completed).length;
-  const todayCompletedTasks = todayTasks.filter(task => task.completed).length;
+  const stats = React.useMemo(() => ({
+    completedTasks: localTasks.filter(task => task.completed).length,
+    pendingTasks: localTasks.filter(task => !task.completed).length,
+    todayCompletedTasks: todayTasks.filter(task => task.completed).length,
+  }), [localTasks, todayTasks]);
 
   // Chart data
-  const chartData = [
+  const chartData = React.useMemo(() => [
     {
       name: 'Total',
-      value: tasks.length,
-      color: '#B84C14'
+      value: localTasks.length,
     },
     {
       name: 'Completed',
-      value: completedTasks,
-      color: '#16a34a'
+      value: stats.completedTasks,
     },
     {
       name: 'Pending',
-      value: pendingTasks,
-      color: '#ea580c'
+      value: stats.pendingTasks,
     },
     {
       name: 'Today Done',
-      value: todayCompletedTasks,
-      color: '#B84C14'
+      value: stats.todayCompletedTasks,
     }
-  ];
+  ], [localTasks.length, stats]);
 
   const handleToggleComplete = async (id: string, currentStatus: boolean) => {
-    await toggleCompleteTask(id, currentStatus);
-  };
-
-  const handleTogglePin = async (id: string, currentStatus: boolean) => {
-    await togglePinTask(id, currentStatus);
+    try {
+      await toggleCompleteTask(id, currentStatus);
+    } catch (error) {
+      console.error('Error toggling task completion:', error);
+    }
   };
 
   const getCategoryColor = (category: string) => {
@@ -162,7 +160,7 @@ const HomePage = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Total Tasks</p>
-                  <p className="text-2xl font-bold text-dincharya-text dark:text-white">{tasks.length}</p>
+                  <p className="text-2xl font-bold text-dincharya-text dark:text-white">{localTasks.length}</p>
                 </div>
                 <CheckSquare className="h-8 w-8 text-dincharya-primary" />
               </div>
@@ -174,7 +172,7 @@ const HomePage = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Completed</p>
-                  <p className="text-2xl font-bold text-green-600">{completedTasks}</p>
+                  <p className="text-2xl font-bold text-green-600">{stats.completedTasks}</p>
                 </div>
                 <CheckSquare className="h-8 w-8 text-green-600" />
               </div>
@@ -186,7 +184,7 @@ const HomePage = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Pending</p>
-                  <p className="text-2xl font-bold text-orange-600">{pendingTasks}</p>
+                  <p className="text-2xl font-bold text-orange-600">{stats.pendingTasks}</p>
                 </div>
                 <Clock className="h-8 w-8 text-orange-600" />
               </div>
@@ -198,7 +196,7 @@ const HomePage = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Today Done</p>
-                  <p className="text-2xl font-bold text-dincharya-primary">{todayCompletedTasks}/{todayTasks.length}</p>
+                  <p className="text-2xl font-bold text-dincharya-primary">{stats.todayCompletedTasks}/{todayTasks.length}</p>
                 </div>
                 <Calendar className="h-8 w-8 text-dincharya-primary" />
               </div>
@@ -216,32 +214,37 @@ const HomePage = () => {
                   <Calendar className="h-5 w-5 mr-2 text-dincharya-primary" />
                   Today's Tasks
                 </CardTitle>
-                <TaskForm />
+                <Button 
+                  size="sm"
+                  onClick={() => navigate('/tasks')}
+                  className="bg-dincharya-primary hover:bg-dincharya-primary/90 text-white"
+                >
+                  Add Task
+                </Button>
               </div>
             </CardHeader>
             <CardContent>
               {todayTasks.length > 0 ? (
                 <div className="space-y-3">
                   {todayTasks.map(renderTaskItem)}
-                  {tasks.filter(task => {
-                    const taskDate = new Date(task.start_time);
-                    taskDate.setHours(0, 0, 0, 0);
-                    return taskDate.getTime() === today.getTime();
-                  }).length > 5 && (
-                    <Button 
-                      variant="ghost" 
-                      className="w-full text-dincharya-primary hover:text-dincharya-primary/80"
-                      onClick={() => navigate('/tasks')}
-                    >
-                      View all today's tasks <ArrowRight className="h-4 w-4 ml-1" />
-                    </Button>
-                  )}
+                  <Button 
+                    variant="ghost" 
+                    className="w-full text-dincharya-primary hover:text-dincharya-primary/80"
+                    onClick={() => navigate('/tasks')}
+                  >
+                    View all tasks <ArrowRight className="h-4 w-4 ml-1" />
+                  </Button>
                 </div>
               ) : (
                 <div className="text-center py-8">
                   <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-500 dark:text-gray-400 mb-4">No tasks scheduled for today</p>
-                  <TaskForm />
+                  <Button 
+                    onClick={() => navigate('/tasks')}
+                    className="bg-dincharya-primary hover:bg-dincharya-primary/90 text-white"
+                  >
+                    Add Task
+                  </Button>
                 </div>
               )}
             </CardContent>
@@ -259,15 +262,13 @@ const HomePage = () => {
               {pinnedTasks.length > 0 ? (
                 <div className="space-y-3">
                   {pinnedTasks.map(renderTaskItem)}
-                  {tasks.filter(task => task.is_pinned).length > 3 && (
-                    <Button 
-                      variant="ghost" 
-                      className="w-full text-dincharya-primary hover:text-dincharya-primary/80"
-                      onClick={() => navigate('/tasks')}
-                    >
-                      View all pinned tasks <ArrowRight className="h-4 w-4 ml-1" />
-                    </Button>
-                  )}
+                  <Button 
+                    variant="ghost" 
+                    className="w-full text-dincharya-primary hover:text-dincharya-primary/80"
+                    onClick={() => navigate('/tasks')}
+                  >
+                    View all pinned tasks <ArrowRight className="h-4 w-4 ml-1" />
+                  </Button>
                 </div>
               ) : (
                 <div className="text-center py-8">
@@ -301,81 +302,48 @@ const HomePage = () => {
           </Card>
         </div>
 
-        {/* Upcoming Tasks and Quick Actions */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Upcoming Tasks */}
-          <Card className="bg-white dark:bg-dincharya-text/90 border-dincharya-border/20">
-            <CardHeader>
-              <CardTitle className="text-xl text-dincharya-text dark:text-white flex items-center">
-                <Clock className="h-5 w-5 mr-2 text-dincharya-primary" />
-                Upcoming
-              </CardTitle>
-              <CardDescription className="text-gray-600 dark:text-gray-400">Next 7 days</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {upcomingTasks.length > 0 ? (
-                <div className="space-y-3">
-                  {upcomingTasks.map(renderTaskItem)}
-                  <Button 
-                    variant="ghost" 
-                    className="w-full text-dincharya-primary hover:text-dincharya-primary/80"
-                    onClick={() => navigate('/tasks')}
-                  >
-                    View all tasks <ArrowRight className="h-4 w-4 ml-1" />
-                  </Button>
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Clock className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500 dark:text-gray-400">No upcoming tasks</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Quick Actions */}
-          <Card className="bg-gradient-to-br from-dincharya-primary to-dincharya-secondary text-white">
-            <CardHeader>
-              <CardTitle className="text-xl text-white">Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-3">
-                <Button 
-                  variant="outline" 
-                  className="bg-white/20 text-white border-white/40 hover:bg-white/30 backdrop-blur-sm"
-                  onClick={() => navigate('/tasks')}
-                >
-                  <CheckSquare className="h-4 w-4 mr-2" />
-                  Tasks
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="bg-white/20 text-white border-white/40 hover:bg-white/30 backdrop-blur-sm"
-                  onClick={() => navigate('/timer')}
-                >
-                  <Clock className="h-4 w-4 mr-2" />
-                  Timer
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="bg-white/20 text-white border-white/40 hover:bg-white/30 backdrop-blur-sm"
-                  onClick={() => navigate('/notes')}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Notes
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="bg-white/20 text-white border-white/40 hover:bg-white/30 backdrop-blur-sm"
-                  onClick={() => navigate('/analytics')}
-                >
-                  <ArrowRight className="h-4 w-4 mr-2" />
-                  Analytics
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Quick Actions */}
+        <Card className="bg-gradient-to-br from-dincharya-primary to-dincharya-secondary text-white">
+          <CardHeader>
+            <CardTitle className="text-xl text-white">Quick Actions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Button 
+                variant="outline" 
+                className="bg-white/20 text-white border-white/40 hover:bg-white/30 backdrop-blur-sm"
+                onClick={() => navigate('/tasks')}
+              >
+                <CheckSquare className="h-4 w-4 mr-2" />
+                Tasks
+              </Button>
+              <Button 
+                variant="outline" 
+                className="bg-white/20 text-white border-white/40 hover:bg-white/30 backdrop-blur-sm"
+                onClick={() => navigate('/timer')}
+              >
+                <Clock className="h-4 w-4 mr-2" />
+                Timer
+              </Button>
+              <Button 
+                variant="outline" 
+                className="bg-white/20 text-white border-white/40 hover:bg-white/30 backdrop-blur-sm"
+                onClick={() => navigate('/notes')}
+              >
+                <CheckSquare className="h-4 w-4 mr-2" />
+                Notes
+              </Button>
+              <Button 
+                variant="outline" 
+                className="bg-white/20 text-white border-white/40 hover:bg-white/30 backdrop-blur-sm"
+                onClick={() => navigate('/analytics')}
+              >
+                <ArrowRight className="h-4 w-4 mr-2" />
+                Analytics
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

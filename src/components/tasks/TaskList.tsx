@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import React, { useState, useMemo } from "react";
 import TaskCard from "./TaskCard";
 import TaskForm from "./TaskForm";
 import { Button } from "@/components/ui/button";
@@ -22,66 +22,65 @@ const TaskList = () => {
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("start_time");
 
-  // Filter tasks based on search query and filters
-  const filteredTasks = tasks.filter((task) => {
-    // Search filter
-    const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (task.description && task.description.toLowerCase().includes(searchQuery.toLowerCase()));
-    
-    // Priority filter
-    const matchesPriority = filterPriority === "all" || task.priority === filterPriority;
-    
-    // Category filter
-    const matchesCategory = filterCategory === "all" || task.category === filterCategory;
-    
-    return matchesSearch && matchesPriority && matchesCategory;
-  });
+  // Memoized filtered and sorted tasks to prevent unnecessary recalculations
+  const processedTasks = useMemo(() => {
+    // Filter tasks
+    const filteredTasks = tasks.filter((task) => {
+      const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (task.description && task.description.toLowerCase().includes(searchQuery.toLowerCase()));
+      
+      const matchesPriority = filterPriority === "all" || task.priority === filterPriority;
+      const matchesCategory = filterCategory === "all" || task.category === filterCategory;
+      
+      return matchesSearch && matchesPriority && matchesCategory;
+    });
 
-  // Sort tasks
-  const sortedTasks = [...filteredTasks].sort((a, b) => {
-    switch (sortBy) {
-      case "start_time":
-        return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
-      case "priority":
-        const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
-        return priorityOrder[a.priority] - priorityOrder[b.priority];
-      case "title":
-        return a.title.localeCompare(b.title);
-      case "pinned":
-        return (b.is_pinned ? 1 : 0) - (a.is_pinned ? 1 : 0);
-      default:
-        return 0;
-    }
-  });
+    // Sort tasks
+    const sortedTasks = [...filteredTasks].sort((a, b) => {
+      switch (sortBy) {
+        case "start_time":
+          return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
+        case "priority":
+          const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
+          return priorityOrder[a.priority] - priorityOrder[b.priority];
+        case "title":
+          return a.title.localeCompare(b.title);
+        case "pinned":
+          return (b.is_pinned ? 1 : 0) - (a.is_pinned ? 1 : 0);
+        default:
+          return 0;
+      }
+    });
 
-  // Handle task create
+    return sortedTasks;
+  }, [tasks, searchQuery, filterPriority, filterCategory, sortBy]);
+
+  // Extract unique categories
+  const categories = useMemo(() => {
+    return Array.from(new Set(tasks.map(task => task.category)));
+  }, [tasks]);
+
+  // Stable handlers
   const handleTaskCreate = async (newTask: Omit<Task, "id" | "user_id" | "created_at" | "updated_at">) => {
     return await createTask(newTask);
   };
 
-  // Handle task update
   const handleTaskUpdate = async (updatedTask: Task) => {
     const { id, ...rest } = updatedTask;
     await updateTask(id, rest);
   };
 
-  // Handle task delete
   const handleTaskDelete = async (id: string) => {
     await deleteTask(id);
   };
 
-  // Handle toggle complete
   const handleToggleComplete = async (id: string, currentStatus: boolean) => {
     await toggleCompleteTask(id, currentStatus);
   };
 
-  // Handle toggle pin
   const handleTogglePin = async (id: string, currentStatus: boolean) => {
     await togglePinTask(id, currentStatus);
   };
-
-  // Extract all unique categories from tasks
-  const categories = Array.from(new Set(tasks.map(task => task.category)));
 
   if (loading) {
     return (
@@ -154,9 +153,9 @@ const TaskList = () => {
       </div>
       
       <div className="flex-1 p-6 overflow-auto">
-        {sortedTasks.length > 0 ? (
+        {processedTasks.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {sortedTasks.map((task) => (
+            {processedTasks.map((task) => (
               <TaskCard 
                 key={task.id} 
                 task={task} 

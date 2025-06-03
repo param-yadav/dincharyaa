@@ -139,7 +139,7 @@ const Sidebar = () => {
     { id: "profile", label: "Profile", icon: User, path: "/profile", implemented: true },
     { id: "notifications", label: "Notifications", icon: BellRing, path: "/notifications", implemented: true, notification: unreadCount },
     { id: "settings", label: "Settings", icon: Settings, path: "/settings", implemented: true },
-    { id: "help", label: "Help", icon: HelpCircle, path: "/help", implemented: false },
+    { id: "help", label: "Help", icon: HelpCircle, path: "/help", implemented: true },
     { id: "contact", label: "Contact", icon: Mail, path: "/contact", implemented: true }
   ];
 
