@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import TaskCard from "./TaskCard";
 import TaskForm from "./TaskForm";
@@ -10,9 +11,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, SlidersHorizontal, Loader2, Calendar } from "lucide-react";
+import { Search, SlidersHorizontal, Calendar } from "lucide-react";
 import { useTasks, Task } from "@/hooks/use-tasks";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import LoadingSpinner from "@/components/ui/loading-spinner";
 
 const TaskList = () => {
   const { tasks, loading, createTask, updateTask, deleteTask, togglePinTask, toggleCompleteTask } = useTasks();
@@ -85,72 +86,74 @@ const TaskList = () => {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-12">
-        <Loader2 className="h-12 w-12 text-dincharya-primary animate-spin mb-4" />
-        <p className="text-muted-foreground">Loading your tasks...</p>
+        <LoadingSpinner size="lg" className="text-dincharya-primary mb-4" />
+        <p className="text-gray-600 dark:text-gray-400">Loading your tasks...</p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="p-4 flex flex-col gap-4">
-        <div className="flex items-center gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search tasks..."
-              className="pl-8"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+    <div className="flex flex-col h-full bg-white dark:bg-dincharya-text/90">
+      <div className="p-6 border-b border-dincharya-border/20">
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-500 dark:text-gray-400" />
+              <Input
+                placeholder="Search tasks..."
+                className="pl-9 bg-white dark:bg-dincharya-muted border-dincharya-border/30 text-dincharya-text dark:text-white"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <TaskForm onTaskCreate={handleTaskCreate} />
           </div>
-          <TaskForm onTaskCreate={handleTaskCreate} />
-        </div>
-        
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="flex items-center gap-1 text-muted-foreground">
-            <SlidersHorizontal className="h-4 w-4" /> Filters:
-          </span>
           
-          <Select value={filterPriority} onValueChange={setFilterPriority}>
-            <SelectTrigger className="h-8 w-[120px]">
-              <SelectValue placeholder="Priority" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Priorities</SelectItem>
-              <SelectItem value="high">High</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
-              <SelectItem value="low">Low</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          <Select value={filterCategory} onValueChange={setFilterCategory}>
-            <SelectTrigger className="h-8 w-[140px]">
-              <SelectValue placeholder="Category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              {categories.map(category => (
-                <SelectItem key={category} value={category}>{category}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="h-8 w-[120px]">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="start_time">Start Time</SelectItem>
-              <SelectItem value="priority">Priority</SelectItem>
-              <SelectItem value="title">Title</SelectItem>
-              <SelectItem value="pinned">Pinned</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <span className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
+              <SlidersHorizontal className="h-4 w-4" /> Filters:
+            </span>
+            
+            <Select value={filterPriority} onValueChange={setFilterPriority}>
+              <SelectTrigger className="h-8 w-[120px] bg-white dark:bg-dincharya-muted border-dincharya-border/30">
+                <SelectValue placeholder="Priority" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Priorities</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="low">Low</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <Select value={filterCategory} onValueChange={setFilterCategory}>
+              <SelectTrigger className="h-8 w-[140px] bg-white dark:bg-dincharya-muted border-dincharya-border/30">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map(category => (
+                  <SelectItem key={category} value={category}>{category}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="h-8 w-[120px] bg-white dark:bg-dincharya-muted border-dincharya-border/30">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="start_time">Start Time</SelectItem>
+                <SelectItem value="priority">Priority</SelectItem>
+                <SelectItem value="title">Title</SelectItem>
+                <SelectItem value="pinned">Pinned</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
       
-      <div className="flex-1 p-4 overflow-auto">
+      <div className="flex-1 p-6 overflow-auto">
         {sortedTasks.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {sortedTasks.map((task) => (
@@ -168,21 +171,21 @@ const TaskList = () => {
           <div className="flex flex-col items-center justify-center h-full text-center p-8">
             {tasks.length > 0 ? (
               <div>
-                <div className="rounded-full bg-muted p-6 mb-4">
-                  <Search className="h-10 w-10 text-muted-foreground" />
+                <div className="rounded-full bg-dincharya-muted/20 p-6 mb-4">
+                  <Search className="h-10 w-10 text-gray-500 dark:text-gray-400" />
                 </div>
-                <h3 className="text-2xl font-medium mb-1">No tasks found</h3>
-                <p className="text-muted-foreground mb-4">
+                <h3 className="text-2xl font-medium mb-1 text-dincharya-text dark:text-white">No tasks found</h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
                   Try adjusting your filters or search query
                 </p>
               </div>
             ) : (
               <div>
-                <div className="rounded-full bg-muted p-6 mb-4">
-                  <Calendar className="h-10 w-10 text-muted-foreground" />
+                <div className="rounded-full bg-dincharya-muted/20 p-6 mb-4">
+                  <Calendar className="h-10 w-10 text-gray-500 dark:text-gray-400" />
                 </div>
-                <h3 className="text-2xl font-medium mb-1">No tasks yet</h3>
-                <p className="text-muted-foreground mb-4">
+                <h3 className="text-2xl font-medium mb-1 text-dincharya-text dark:text-white">No tasks yet</h3>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
                   Get started by adding your first task
                 </p>
                 <TaskForm onTaskCreate={handleTaskCreate} />

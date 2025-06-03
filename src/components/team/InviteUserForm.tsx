@@ -42,12 +42,12 @@ export function InviteUserForm({ onInviteSent }: InviteUserFormProps) {
     try {
       setLoading(true);
       
-      // First check if the user exists
-      const { data, error } = await supabase
-        .rpc('find_user_id_by_email', { email });
+      // First try to find user by email using our RPC function
+      const { data: invitedUserId, error: lookupError } = await supabase
+        .rpc('find_user_id_by_email', { email: email.toLowerCase().trim() });
         
-      if (error) {
-        console.error("Error checking user:", error);
+      if (lookupError) {
+        console.error("Error checking user:", lookupError);
         toast({
           title: "Error checking user",
           description: "Unable to verify if user exists",
@@ -56,16 +56,36 @@ export function InviteUserForm({ onInviteSent }: InviteUserFormProps) {
         return;
       }
       
-      if (!data) {
+      if (!invitedUserId) {
         toast({
           title: "User not found",
-          description: "No account exists with this email address",
+          description: `No account exists with email: ${email}. Please ask them to sign up first.`,
           variant: "destructive"
         });
         return;
       }
       
-      const invitedUserId = data;
+      // Check if invitation already exists
+      const { data: existingInvitation, error: checkError } = await supabase
+        .from('team_invitations')
+        .select('id')
+        .eq('sender_id', user.id)
+        .eq('recipient_id', invitedUserId)
+        .eq('status', 'pending')
+        .single();
+        
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error("Error checking existing invitation:", checkError);
+      }
+      
+      if (existingInvitation) {
+        toast({
+          title: "Invitation already sent",
+          description: "You have already sent a pending invitation to this user",
+          variant: "destructive"
+        });
+        return;
+      }
       
       // Create a team invitation
       const { error: inviteError } = await supabase
@@ -78,20 +98,12 @@ export function InviteUserForm({ onInviteSent }: InviteUserFormProps) {
         });
         
       if (inviteError) {
-        if (inviteError.code === '23505') {
-          toast({
-            title: "Invitation already sent",
-            description: "You have already invited this user",
-            variant: "destructive"
-          });
-        } else {
-          console.error("Error creating invitation:", inviteError);
-          toast({
-            title: "Failed to send invitation",
-            description: "Please try again later",
-            variant: "destructive"
-          });
-        }
+        console.error("Error creating invitation:", inviteError);
+        toast({
+          title: "Failed to send invitation",
+          description: "Please try again later",
+          variant: "destructive"
+        });
         return;
       }
       
@@ -101,7 +113,7 @@ export function InviteUserForm({ onInviteSent }: InviteUserFormProps) {
         .insert({
           user_id: invitedUserId,
           title: 'Team Invitation',
-          message: `${user.user_metadata?.full_name || 'Someone'} has invited you to join their team`,
+          message: `${user.email || 'Someone'} has invited you to join their team`,
           type: 'team_invitation',
           read: false,
           related_id: user.id
@@ -131,45 +143,59 @@ export function InviteUserForm({ onInviteSent }: InviteUserFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="email">Email address</Label>
-        <Input
-          id="email"
-          type="email"
-          placeholder="colleague@example.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="role">Role</Label>
-        <select
-          id="role"
-          className="w-full rounded-md border border-input bg-background px-3 py-2"
-          value={role}
-          onChange={(e) => setRole(e.target.value)}
+    <div className="bg-white dark:bg-dincharya-text/90 rounded-lg border border-dincharya-border/20 p-6">
+      <h3 className="text-lg font-semibold text-dincharya-text dark:text-white mb-4">
+        Invite Team Member
+      </h3>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="email" className="text-dincharya-text dark:text-gray-200">
+            Email address
+          </Label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="colleague@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="bg-white dark:bg-dincharya-muted border-dincharya-border/30 text-dincharya-text dark:text-white"
+            required
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="role" className="text-dincharya-text dark:text-gray-200">
+            Role
+          </Label>
+          <select
+            id="role"
+            className="w-full rounded-md border border-dincharya-border/30 bg-white dark:bg-dincharya-muted px-3 py-2 text-dincharya-text dark:text-white"
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+          >
+            <option value="member">Team Member</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        
+        <Button 
+          type="submit" 
+          className="w-full bg-dincharya-primary hover:bg-dincharya-primary/90 text-white" 
+          disabled={loading || !email}
         >
-          <option value="member">Team Member</option>
-          <option value="admin">Admin</option>
-        </select>
-      </div>
-      
-      <Button type="submit" className="w-full" disabled={loading || !email}>
-        {loading ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Sending invitation...
-          </>
-        ) : (
-          <>
-            <UserPlus className="mr-2 h-4 w-4" />
-            Send invitation
-          </>
-        )}
-      </Button>
-    </form>
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Sending invitation...
+            </>
+          ) : (
+            <>
+              <UserPlus className="mr-2 h-4 w-4" />
+              Send invitation
+            </>
+          )}
+        </Button>
+      </form>
+    </div>
   );
 }

@@ -26,7 +26,7 @@ export interface AssignTaskParams {
 
 export const useTaskAssignments = () => {
   const [assignments, setAssignments] = useState<TaskAssignment[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const { user } = useAuth();
 
   // Fetch all task assignments for the current user (both sent and received)
@@ -40,25 +40,41 @@ export const useTaskAssignments = () => {
     try {
       setLoading(true);
       
-      // Using our custom RPC function
+      // Simple query to get assignments without using RPC initially
       const { data, error } = await supabase
-        .rpc('get_user_task_assignments', { user_id: user.id });
+        .from('task_assignments')
+        .select(`
+          *,
+          tasks (
+            id,
+            title,
+            description,
+            start_time,
+            priority
+          )
+        `)
+        .or(`assigned_to.eq.${user.id},assigned_by.eq.${user.id}`)
+        .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching task assignments:", error);
+        // Don't show error toast on initial load failure
+        setAssignments([]);
+        return;
+      }
       
       if (data) {
-        // Cast the JSON data to TaskAssignment[] with type assertion
-        setAssignments(data as unknown as TaskAssignment[]);
+        const formattedAssignments = data.map(assignment => ({
+          ...assignment,
+          task: assignment.tasks
+        }));
+        setAssignments(formattedAssignments);
       } else {
         setAssignments([]);
       }
     } catch (error: any) {
       console.error("Error fetching task assignments:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load task assignments",
-        variant: "destructive",
-      });
+      setAssignments([]);
     } finally {
       setLoading(false);
     }
@@ -84,53 +100,80 @@ export const useTaskAssignments = () => {
         let assigneeId = assignee;
         
         if (assignee.includes('@')) {
-          const { data: userId, error: lookupError } = await supabase
-            .rpc('find_user_id_by_email', { email: assignee });
+          const { data: foundUser, error: lookupError } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('id', assignee)
+            .single();
           
-          if (lookupError || !userId) {
-            toast({
-              title: "User Not Found",
-              description: `Could not find user with email: ${assignee}`,
-              variant: "destructive",
-            });
-            continue;
+          if (lookupError || !foundUser) {
+            // Try to find by email in auth.users using RPC
+            const { data: userId, error: rpcError } = await supabase
+              .rpc('find_user_id_by_email', { email: assignee });
+            
+            if (rpcError || !userId) {
+              toast({
+                title: "User Not Found",
+                description: `Could not find user with email: ${assignee}`,
+                variant: "destructive",
+              });
+              continue;
+            }
+            
+            assigneeId = userId;
+          } else {
+            assigneeId = foundUser.id;
           }
-          
-          assigneeId = userId;
         }
         
-        // Create the assignment record using our RPC function
+        // Create the assignment record
         const { data, error } = await supabase
-          .rpc('create_task_assignment', {
-            p_task_id: task.id,
-            p_assigned_by: user.id,
-            p_assigned_to: assigneeId,
-            p_message: message || null
-          });
+          .from('task_assignments')
+          .insert({
+            task_id: task.id,
+            assigned_by: user.id,
+            assigned_to: assigneeId,
+            message: message || null,
+            status: 'pending'
+          })
+          .select()
+          .single();
         
-        if (error) throw error;
+        if (error) {
+          console.error("Error creating assignment:", error);
+          toast({
+            title: "Error",
+            description: "Failed to create task assignment",
+            variant: "destructive",
+          });
+          continue;
+        }
         
         if (data) {
-          // Cast the return data to TaskAssignment
-          createdAssignments.push(data as unknown as TaskAssignment);
+          createdAssignments.push(data);
           
-          // Create a notification using our RPC function
+          // Create a notification
           await supabase
-            .rpc('create_assignment_notification', {
-              p_user_id: assigneeId,
-              p_title: "New Task Assignment",
-              p_message: `You have been assigned a new task: ${task.title}`,
-              p_related_id: task.id
+            .from('notifications')
+            .insert({
+              user_id: assigneeId,
+              title: "New Task Assignment",
+              message: `You have been assigned a new task: ${task.title}`,
+              type: 'task_assignment',
+              related_id: task.id
             });
         }
       }
 
-      toast({
-        title: "Task Assigned",
-        description: `Task assigned to ${createdAssignments.length} ${createdAssignments.length === 1 ? 'user' : 'users'}`,
-      });
+      if (createdAssignments.length > 0) {
+        toast({
+          title: "Task Assigned",
+          description: `Task assigned to ${createdAssignments.length} ${createdAssignments.length === 1 ? 'user' : 'users'}`,
+        });
+        
+        await fetchAssignments();
+      }
       
-      await fetchAssignments();
       return createdAssignments;
     } catch (error: any) {
       console.error("Error assigning task:", error);
@@ -148,17 +191,16 @@ export const useTaskAssignments = () => {
     if (!user) return false;
 
     try {
-      // Using our custom RPC function to respond to assignment
-      const { data, error } = await supabase
-        .rpc('respond_to_task_assignment', {
-          p_assignment_id: assignmentId,
-          p_accept: accept,
-          p_rejection_reason: rejectionReason || null
-        });
+      const { error } = await supabase
+        .from('task_assignments')
+        .update({
+          status: accept ? 'accepted' : 'rejected',
+          rejection_reason: rejectionReason || null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', assignmentId);
         
       if (error) throw error;
-      
-      if (data === null) return false;
 
       toast({
         title: accept ? "Task Accepted" : "Task Rejected",
@@ -182,28 +224,6 @@ export const useTaskAssignments = () => {
   useEffect(() => {
     if (user) {
       fetchAssignments();
-      
-      // Subscribe to realtime updates for notifications table as a proxy for assignments
-      const channel = supabase
-        .channel('task-assignments-changes')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'notifications' },
-          (payload) => {
-            // Only refresh if it's a task assignment notification
-            if (payload.new && (
-              (payload.new as any).type === 'task_assignment' || 
-              (payload.new as any).type === 'task_response'
-            )) {
-              fetchAssignments();
-            }
-          }
-        )
-        .subscribe();
-        
-      return () => {
-        supabase.removeChannel(channel);
-      };
     }
   }, [user]);
 
