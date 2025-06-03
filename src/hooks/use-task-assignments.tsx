@@ -58,15 +58,32 @@ export const useTaskAssignments = () => {
 
       if (error) {
         console.error("Error fetching task assignments:", error);
-        // Don't show error toast on initial load failure
         setAssignments([]);
         return;
       }
       
       if (data) {
-        const formattedAssignments = data.map(assignment => ({
-          ...assignment,
-          task: assignment.tasks
+        const formattedAssignments: TaskAssignment[] = data.map(assignment => ({
+          id: assignment.id,
+          task_id: assignment.task_id,
+          assigned_by: assignment.assigned_by,
+          assigned_to: assignment.assigned_to,
+          status: assignment.status as 'pending' | 'accepted' | 'rejected',
+          created_at: assignment.created_at,
+          updated_at: assignment.updated_at,
+          rejection_reason: assignment.rejection_reason || undefined,
+          message: assignment.message || undefined,
+          task: assignment.tasks ? {
+            id: assignment.tasks.id,
+            title: assignment.tasks.title,
+            description: assignment.tasks.description || '',
+            start_time: assignment.tasks.start_time,
+            priority: assignment.tasks.priority || 'medium',
+            user_id: '', // This will be filled from the actual task if needed
+            completed: false,
+            created_at: '',
+            updated_at: ''
+          } : undefined
         }));
         setAssignments(formattedAssignments);
       } else {
@@ -150,7 +167,20 @@ export const useTaskAssignments = () => {
         }
         
         if (data) {
-          createdAssignments.push(data);
+          const formattedAssignment: TaskAssignment = {
+            id: data.id,
+            task_id: data.task_id,
+            assigned_by: data.assigned_by,
+            assigned_to: data.assigned_to,
+            status: data.status as 'pending' | 'accepted' | 'rejected',
+            created_at: data.created_at,
+            updated_at: data.updated_at,
+            rejection_reason: data.rejection_reason || undefined,
+            message: data.message || undefined,
+            task: task
+          };
+          
+          createdAssignments.push(formattedAssignment);
           
           // Create a notification
           await supabase
