@@ -4,11 +4,11 @@ import ProfileEditor from "@/components/profile/ProfileEditor";
 
 const ProfilePage = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 p-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">Profile</h1>
-          <p className="text-gray-600">Manage your personal information</p>
+    <div className="min-h-screen bg-gradient-to-br from-dincharya-background to-dincharya-muted/20 dark:from-dincharya-text dark:to-dincharya-muted/10">
+      <div className="container mx-auto p-6">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-dincharya-text dark:text-white mb-2">Profile</h1>
+          <p className="text-gray-600 dark:text-gray-400">Manage your personal information</p>
         </div>
         
         <ProfileEditor />

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Play, Pause, Square, Settings, Coffee, Brain } from "lucide-react";
 import { useTimerSessions } from "@/hooks/use-timer-sessions";
 import { toast } from "@/hooks/use-toast";
+import CountdownTimer from "./CountdownTimer";
 
 type TimerType = 'pomodoro' | 'short-break' | 'long-break';
 

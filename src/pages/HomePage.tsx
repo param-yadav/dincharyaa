@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, CheckSquare, Clock, Pin, ArrowRight, Plus } from "lucide-react";
+import { Calendar, CheckSquare, Clock, Pin, ArrowRight, Plus, BarChart3 } from "lucide-react";
 import { format } from "date-fns";
 import { useAuth } from "@/hooks/use-auth";
 import { useTasks, Task } from "@/hooks/use-tasks";
@@ -10,10 +10,11 @@ import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import TaskForm from "@/components/tasks/TaskForm";
 import { Badge } from "@/components/ui/badge";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
 
 const HomePage = () => {
   const { user } = useAuth();
-  const { tasks, toggleCompleteTask, togglePinTask } = useTasks();
+  const { tasks, toggleCompleteTask, togglePinTask, loading } = useTasks();
   const navigate = useNavigate();
   
   // Get today's tasks
@@ -38,13 +39,34 @@ const HomePage = () => {
     return taskDate > today && taskDate <= nextWeek;
   }).slice(0, 3);
   
-  // Get recent tasks
-  const recentTasks = tasks.slice(0, 5);
-  
   // Quick stats
   const completedTasks = tasks.filter(task => task.completed).length;
   const pendingTasks = tasks.filter(task => !task.completed).length;
   const todayCompletedTasks = todayTasks.filter(task => task.completed).length;
+
+  // Chart data
+  const chartData = [
+    {
+      name: 'Total',
+      value: tasks.length,
+      color: '#B84C14'
+    },
+    {
+      name: 'Completed',
+      value: completedTasks,
+      color: '#16a34a'
+    },
+    {
+      name: 'Pending',
+      value: pendingTasks,
+      color: '#ea580c'
+    },
+    {
+      name: 'Today Done',
+      value: todayCompletedTasks,
+      color: '#B84C14'
+    }
+  ];
 
   const handleToggleComplete = async (id: string, currentStatus: boolean) => {
     await toggleCompleteTask(id, currentStatus);
@@ -105,8 +127,21 @@ const HomePage = () => {
     );
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-dincharya-background to-dincharya-muted/20 dark:from-dincharya-text dark:to-dincharya-muted/10">
+        <div className="container mx-auto p-6 flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-dincharya-primary mx-auto mb-4"></div>
+            <p className="text-dincharya-text dark:text-white">Loading your dashboard...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-dincharya-bg to-dincharya-muted/20 dark:from-dincharya-text dark:to-dincharya-muted/10">
+    <div className="min-h-screen bg-gradient-to-br from-dincharya-background to-dincharya-muted/20 dark:from-dincharya-text dark:to-dincharya-muted/10">
       <div className="container mx-auto p-6 space-y-8">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -118,7 +153,6 @@ const HomePage = () => {
               {format(today, "EEEE, MMMM d, yyyy")}
             </p>
           </div>
-          <TaskForm />
         </div>
 
         {/* Quick Stats */}
@@ -173,14 +207,17 @@ const HomePage = () => {
         </div>
 
         {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Today's Tasks */}
           <Card className="bg-white dark:bg-dincharya-text/90 border-dincharya-border/20">
             <CardHeader>
-              <CardTitle className="text-xl text-dincharya-text dark:text-white flex items-center">
-                <Calendar className="h-5 w-5 mr-2 text-dincharya-primary" />
-                Today's Tasks
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-xl text-dincharya-text dark:text-white flex items-center">
+                  <Calendar className="h-5 w-5 mr-2 text-dincharya-primary" />
+                  Today's Tasks
+                </CardTitle>
+                <TaskForm />
+              </div>
             </CardHeader>
             <CardContent>
               {todayTasks.length > 0 ? (
@@ -241,6 +278,31 @@ const HomePage = () => {
             </CardContent>
           </Card>
 
+          {/* Task Analytics */}
+          <Card className="bg-white dark:bg-dincharya-text/90 border-dincharya-border/20">
+            <CardHeader>
+              <CardTitle className="text-xl text-dincharya-text dark:text-white flex items-center">
+                <BarChart3 className="h-5 w-5 mr-2 text-dincharya-primary" />
+                Task Analytics
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-48">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Bar dataKey="value" fill="#B84C14" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Upcoming Tasks and Quick Actions */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Upcoming Tasks */}
           <Card className="bg-white dark:bg-dincharya-text/90 border-dincharya-border/20">
             <CardHeader>

@@ -56,7 +56,7 @@ const TaskList = () => {
 
   // Handle task create
   const handleTaskCreate = async (newTask: Omit<Task, "id" | "user_id" | "created_at" | "updated_at">) => {
-    await createTask(newTask);
+    return await createTask(newTask);
   };
 
   // Handle task update
@@ -85,16 +85,16 @@ const TaskList = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-full p-12">
+      <div className="flex flex-col items-center justify-center h-full p-12 bg-gradient-to-br from-dincharya-background to-dincharya-muted/20 dark:from-dincharya-text dark:to-dincharya-muted/10">
         <LoadingSpinner size="lg" className="text-dincharya-primary mb-4" />
-        <p className="text-gray-600 dark:text-gray-400">Loading your tasks...</p>
+        <p className="text-dincharya-text dark:text-white">Loading your tasks...</p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-dincharya-text/90">
-      <div className="p-6 border-b border-dincharya-border/20">
+    <div className="flex flex-col h-full bg-gradient-to-br from-dincharya-background to-dincharya-muted/20 dark:from-dincharya-text dark:to-dincharya-muted/10">
+      <div className="p-6 border-b border-dincharya-border/20 bg-white dark:bg-dincharya-text/90">
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-3">
             <div className="relative flex-1">
