@@ -1,7 +1,7 @@
 
 import React from "react";
 import PomodoroTimer from "@/components/timer/PomodoroTimer";
-import TimerHistory from "@/components/timer/TimerHistory";
+import { TimerHistory } from "@/components/timer/TimerHistory";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Clock, BarChart3 } from "lucide-react";
