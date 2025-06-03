@@ -1,390 +1,213 @@
 
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useAuth } from "@/hooks/use-auth";
-import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import SimpleNoteEditor from "@/components/notes/SimpleNoteEditor";
+import { useNotes, Note } from "@/hooks/use-notes";
+import { Plus, Search, Edit, Trash2, FileText, Tag } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { format } from "date-fns";
-import { FileText, Plus, Search, Edit, Trash2 } from "lucide-react";
-import { NoteEditor } from "@/components/notes/NoteEditor";
-import ReactMarkdown from 'react-markdown';
-import { Database } from "@/integrations/supabase/types";
-
-type NotesRow = Database['public']['Tables']['notes']['Row'];
-
-interface Note {
-  id: string;
-  title: string;
-  content: string;
-  created_at: string;
-  updated_at: string;
-  user_id: string;
-  tags?: string[];
-}
 
 const NotesPage = () => {
-  const { user } = useAuth();
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [viewDialogOpen, setViewDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
-  const [saving, setSaving] = useState(false);
-  
-  useEffect(() => {
-    if (user) {
-      fetchNotes();
+  const { notes, loading, createNote, updateNote, deleteNote } = useNotes();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [editingNote, setEditingNote] = useState<Note | null>(null);
+  const [showEditor, setShowEditor] = useState(false);
+
+  // Get all unique tags
+  const allTags = Array.from(
+    new Set(notes.flatMap(note => note.tags || []))
+  ).sort();
+
+  // Filter notes based on search and selected tag
+  const filteredNotes = notes.filter(note => {
+    const matchesSearch = note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         note.content.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesTag = !selectedTag || (note.tags && note.tags.includes(selectedTag));
+    return matchesSearch && matchesTag;
+  });
+
+  const handleSaveNote = async (noteData: { title: string; content: string; tags?: string[] }) => {
+    if (editingNote) {
+      await updateNote(editingNote.id, noteData);
     } else {
-      setNotes([]);
-      setLoading(false);
+      await createNote(noteData);
     }
-  }, [user]);
-  
-  const fetchNotes = async () => {
-    if (!user) return;
-    
-    try {
-      setLoading(true);
-      
-      const { data, error } = await supabase
-        .from('notes')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('updated_at', { ascending: false });
-        
-      if (error) throw error;
-      
-      setNotes(data || []);
-    } catch (error) {
-      console.error("Error fetching notes:", error);
-      toast({
-        title: "Failed to load notes",
-        description: "There was an error loading your notes",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
+    setShowEditor(false);
+    setEditingNote(null);
+  };
+
+  const handleEditNote = (note: Note) => {
+    setEditingNote(note);
+    setShowEditor(true);
+  };
+
+  const handleDeleteNote = async (noteId: string) => {
+    if (window.confirm("Are you sure you want to delete this note?")) {
+      await deleteNote(noteId);
     }
   };
-  
-  const handleCreateNote = async (title: string, content: string, tags: string[]) => {
-    if (!user) return;
-    
-    try {
-      setSaving(true);
-      
-      const { data, error } = await supabase
-        .from('notes')
-        .insert({
-          title,
-          content,
-          user_id: user.id,
-          tags
-        })
-        .select()
-        .single();
-        
-      if (error) throw error;
-      
-      setNotes([data as Note, ...notes]);
-      setCreateDialogOpen(false);
-      
-      toast({
-        title: "Note created",
-        description: "Your note has been saved successfully"
-      });
-    } catch (error) {
-      console.error("Error creating note:", error);
-      toast({
-        title: "Failed to create note",
-        description: "There was an error saving your note",
-        variant: "destructive"
-      });
-    } finally {
-      setSaving(false);
-    }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
-  
-  const handleUpdateNote = async (title: string, content: string, tags: string[]) => {
-    if (!user || !selectedNote) return;
-    
-    try {
-      setSaving(true);
-      
-      const { data, error } = await supabase
-        .from('notes')
-        .update({
-          title,
-          content,
-          tags,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', selectedNote.id)
-        .select()
-        .single();
-        
-      if (error) throw error;
-      
-      setNotes(notes.map(note => 
-        note.id === data.id ? data as Note : note
-      ));
-      
-      setEditDialogOpen(false);
-      setSelectedNote(null);
-      
-      toast({
-        title: "Note updated",
-        description: "Your changes have been saved"
-      });
-    } catch (error) {
-      console.error("Error updating note:", error);
-      toast({
-        title: "Failed to update note",
-        description: "There was an error saving your changes",
-        variant: "destructive"
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
-  
-  const handleDeleteNote = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('notes')
-        .delete()
-        .eq('id', id);
-        
-      if (error) throw error;
-      
-      setNotes(notes.filter(note => note.id !== id));
-      setViewDialogOpen(false);
-      setSelectedNote(null);
-      
-      toast({
-        title: "Note deleted",
-        description: "Your note has been permanently removed"
-      });
-    } catch (error) {
-      console.error("Error deleting note:", error);
-      toast({
-        title: "Failed to delete note",
-        description: "There was an error deleting your note",
-        variant: "destructive"
-      });
-    }
-  };
-  
-  const filteredNotes = notes.filter(note => 
-    note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    note.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (note.tags && note.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())))
-  );
+
+  if (showEditor) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 p-4">
+        <SimpleNoteEditor
+          note={editingNote || undefined}
+          onSave={handleSaveNote}
+          onCancel={() => {
+            setShowEditor(false);
+            setEditingNote(null);
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-dincharya-text dark:text-white">My Notes</h1>
-        
-        <Button 
-          onClick={() => setCreateDialogOpen(true)} 
-          className="bg-amber-600 hover:bg-amber-700"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          New Note
-        </Button>
-      </div>
-      
-      {/* Search and filter */}
-      <div className="mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Search notes by title, content or tags..."
-            className="pl-10"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-      </div>
-      
-      {/* Notes grid */}
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1, 2, 3, 4, 5, 6].map(i => (
-            <Card key={i} className="h-[220px] animate-pulse">
-              <CardHeader>
-                <div className="h-5 bg-gray-200 rounded w-3/4 mb-2"></div>
-                <div className="h-4 bg-gray-100 rounded w-1/2"></div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="h-4 bg-gray-100 rounded"></div>
-                  <div className="h-4 bg-gray-100 rounded"></div>
-                  <div className="h-4 bg-gray-100 rounded w-3/4"></div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : filteredNotes.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredNotes.map(note => (
-            <Card 
-              key={note.id} 
-              className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer h-[220px] flex flex-col"
-              onClick={() => {
-                setSelectedNote(note);
-                setViewDialogOpen(true);
-              }}
-            >
-              <CardHeader className="pb-2">
-                <CardTitle>{note.title}</CardTitle>
-                <CardDescription>
-                  {format(new Date(note.updated_at), "MMM d, yyyy 'at' h:mm a")}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex-grow overflow-hidden">
-                <div className="line-clamp-4 text-sm text-gray-600">
-                  {note.content}
-                </div>
-              </CardContent>
-              <CardFooter className="pt-2 pb-3 flex flex-wrap gap-1">
-                {note.tags && note.tags.map(tag => (
-                  <span key={tag} className="text-xs bg-gray-100 rounded-full px-2 py-1">
-                    {tag}
-                  </span>
-                ))}
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="rounded-full bg-gray-100 p-6 mb-4">
-            <FileText className="h-12 w-12 text-gray-400" />
-          </div>
-          <h3 className="text-xl font-medium mb-2">No notes found</h3>
-          <p className="text-muted-foreground mb-6 max-w-md">
-            {searchQuery 
-              ? "No notes match your search criteria. Try a different search term."
-              : "Create your first note to start organizing your thoughts and ideas."}
-          </p>
-          {!searchQuery && (
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 p-4">
+      <div className="max-w-6xl mx-auto">
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-4xl font-bold text-gray-800 mb-2">Notes</h1>
+              <p className="text-gray-600">Capture your thoughts and ideas</p>
+            </div>
             <Button 
-              onClick={() => setCreateDialogOpen(true)}
-              className="bg-amber-600 hover:bg-amber-700"
+              onClick={() => setShowEditor(true)}
+              className="bg-purple-600 hover:bg-purple-700 text-white"
             >
-              <Plus className="mr-2 h-4 w-4" />
-              Create Note
+              <Plus className="w-4 h-4 mr-2" />
+              New Note
             </Button>
-          )}
-        </div>
-      )}
-      
-      {/* Create Note Dialog */}
-      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-hidden">
-          <DialogHeader>
-            <DialogTitle>Create New Note</DialogTitle>
-            <DialogDescription>
-              Add a new note to your collection
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="overflow-y-auto pr-2">
-            <NoteEditor 
-              onSave={handleCreateNote}
-              loading={saving}
-            />
           </div>
-        </DialogContent>
-      </Dialog>
-      
-      {/* View Note Dialog */}
-      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-hidden">
-          {selectedNote && (
-            <>
-              <DialogHeader className="flex flex-col gap-1.5">
-                <div className="flex justify-between items-start">
-                  <DialogTitle className="text-2xl pr-8">{selectedNote.title}</DialogTitle>
-                  <div className="flex space-x-1">
-                    <Button 
-                      size="icon" 
-                      variant="outline" 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setViewDialogOpen(false);
-                        setEditDialogOpen(true);
-                      }}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      size="icon" 
-                      variant="outline" 
-                      className="text-red-500 hover:text-red-700"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteNote(selectedNote.id);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                <DialogDescription>
-                  {`Last updated ${format(new Date(selectedNote.updated_at), "MMMM d, yyyy 'at' h:mm a")}`}
-                </DialogDescription>
-                
-                {selectedNote.tags && selectedNote.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {selectedNote.tags.map(tag => (
-                      <span key={tag} className="text-xs bg-gray-100 rounded-full px-2 py-1">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </DialogHeader>
-              
-              <div className="overflow-y-auto pr-2 max-h-[500px] mt-2 prose prose-sm">
-                <ReactMarkdown>{selectedNote.content}</ReactMarkdown>
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
-      
-      {/* Edit Note Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-hidden">
-          <DialogHeader>
-            <DialogTitle>Edit Note</DialogTitle>
-            <DialogDescription>
-              Make changes to your note
-            </DialogDescription>
-          </DialogHeader>
-          
-          {selectedNote && (
-            <div className="overflow-y-auto pr-2">
-              <NoteEditor 
-                initialTitle={selectedNote.title}
-                initialContent={selectedNote.content}
-                initialTags={selectedNote.tags || []}
-                onSave={handleUpdateNote}
-                loading={saving}
+
+          {/* Search and Filter */}
+          <div className="flex flex-col sm:flex-row gap-4 mb-6">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <Input
+                placeholder="Search notes..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
               />
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+            
+            {allTags.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant={selectedTag === null ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedTag(null)}
+                >
+                  All
+                </Button>
+                {allTags.map(tag => (
+                  <Button
+                    key={tag}
+                    variant={selectedTag === tag ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedTag(tag)}
+                    className="flex items-center gap-1"
+                  >
+                    <Tag className="w-3 h-3" />
+                    {tag}
+                  </Button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center h-64">
+            <p className="text-gray-500">Loading notes...</p>
+          </div>
+        ) : filteredNotes.length === 0 ? (
+          <Card className="text-center py-12">
+            <CardContent>
+              <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-700 mb-2">
+                {notes.length === 0 ? "No notes yet" : "No notes found"}
+              </h3>
+              <p className="text-gray-500 mb-4">
+                {notes.length === 0 
+                  ? "Create your first note to get started"
+                  : "Try adjusting your search or filter"
+                }
+              </p>
+              {notes.length === 0 && (
+                <Button onClick={() => setShowEditor(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Note
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredNotes.map((note) => (
+              <Card key={note.id} className="bg-white/70 backdrop-blur-sm border border-white/20 shadow-lg hover:shadow-xl transition-shadow duration-200">
+                <CardHeader className="pb-2">
+                  <div className="flex items-start justify-between">
+                    <CardTitle className="text-lg font-semibold text-gray-800 line-clamp-2">
+                      {note.title}
+                    </CardTitle>
+                    <div className="flex gap-1 ml-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEditNote(note)}
+                        className="h-8 w-8 text-gray-500 hover:text-purple-600"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteNote(note.id)}
+                        className="h-8 w-8 text-gray-500 hover:text-red-600"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    {formatDate(note.updated_at)}
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600 text-sm line-clamp-3 mb-3">
+                    {note.content}
+                  </p>
+                  {note.tags && note.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {note.tags.map((tag) => (
+                        <Badge key={tag} variant="secondary" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
