@@ -50,7 +50,13 @@ export const useTaskAssignments = () => {
             title,
             description,
             start_time,
-            priority
+            priority,
+            category,
+            is_pinned,
+            completed,
+            user_id,
+            created_at,
+            updated_at
           )
         `)
         .or(`assigned_to.eq.${user.id},assigned_by.eq.${user.id}`)
@@ -79,10 +85,12 @@ export const useTaskAssignments = () => {
             description: assignment.tasks.description || '',
             start_time: assignment.tasks.start_time,
             priority: assignment.tasks.priority || 'medium',
-            user_id: '', // This will be filled from the actual task if needed
-            completed: false,
-            created_at: '',
-            updated_at: ''
+            category: assignment.tasks.category || 'Work',
+            is_pinned: assignment.tasks.is_pinned || false,
+            completed: assignment.tasks.completed || false,
+            user_id: assignment.tasks.user_id || '',
+            created_at: assignment.tasks.created_at || '',
+            updated_at: assignment.tasks.updated_at || ''
           } : undefined
         }));
         setAssignments(formattedAssignments);
