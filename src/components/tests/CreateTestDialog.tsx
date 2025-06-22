@@ -22,6 +22,7 @@ const CreateTestDialog = ({ open, onOpenChange }: CreateTestDialogProps) => {
     total_marks: 50,
     time_limit_minutes: 60,
     negative_marking_ratio: 0.25,
+    is_public: false,
   });
 
   const createTemplate = useCreateTestTemplate();
@@ -38,6 +39,7 @@ const CreateTestDialog = ({ open, onOpenChange }: CreateTestDialogProps) => {
       total_marks: 50,
       time_limit_minutes: 60,
       negative_marking_ratio: 0.25,
+      is_public: false,
     });
   };
 
