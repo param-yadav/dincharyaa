@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -24,6 +23,7 @@ import NotFound from "./pages/NotFound";
 import Layout from "./components/layout/Layout";
 import MainLayout from "./components/layout/MainLayout";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import TestsPage from "./pages/TestsPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -95,6 +95,13 @@ function App() {
           <ProtectedRoute>
             <MainLayout>
               <NotesPage />
+            </MainLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/tests" element={
+          <ProtectedRoute>
+            <MainLayout>
+              <TestsPage />
             </MainLayout>
           </ProtectedRoute>
         } />
