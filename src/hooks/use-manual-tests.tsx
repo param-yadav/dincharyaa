@@ -30,7 +30,7 @@ export const useManualTests = () => {
     queryKey: ["manual-tests"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("manual_test_entries")
+        .from("manual_test_entries" as any)
         .select(`
           *,
           subject_scores (*)
@@ -68,7 +68,7 @@ export const useCreateManualTest = () => {
 
       // Create test entry
       const { data: testEntry, error: testError } = await supabase
-        .from("manual_test_entries")
+        .from("manual_test_entries" as any)
         .insert({
           user_id: user.id,
           test_name: testData.test_name,
@@ -93,7 +93,7 @@ export const useCreateManualTest = () => {
       }));
 
       const { error: scoresError } = await supabase
-        .from("subject_scores")
+        .from("subject_scores" as any)
         .insert(subjectScores);
 
       if (scoresError) throw scoresError;
@@ -125,7 +125,7 @@ export const useManualTestAnalytics = () => {
       if (!user) throw new Error("User not authenticated");
 
       const { data, error } = await supabase
-        .from("subject_scores")
+        .from("subject_scores" as any)
         .select(`
           *,
           manual_test_entries!inner (

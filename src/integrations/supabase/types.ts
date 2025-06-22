@@ -9,6 +9,36 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      manual_test_entries: {
+        Row: {
+          created_at: string | null
+          id: string
+          test_date: string
+          test_name: string
+          total_marks: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          test_date: string
+          test_name: string
+          total_marks?: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          test_date?: string
+          test_name?: string
+          total_marks?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       notes: {
         Row: {
           content: string
@@ -149,6 +179,53 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      subject_scores: {
+        Row: {
+          correct_answers: number
+          created_at: string | null
+          id: string
+          marks_per_question: number
+          not_attempted: number
+          scored_marks: number
+          subject_name: string
+          test_entry_id: string | null
+          total_questions: number
+          wrong_answers: number
+        }
+        Insert: {
+          correct_answers?: number
+          created_at?: string | null
+          id?: string
+          marks_per_question?: number
+          not_attempted?: number
+          scored_marks?: number
+          subject_name: string
+          test_entry_id?: string | null
+          total_questions?: number
+          wrong_answers?: number
+        }
+        Update: {
+          correct_answers?: number
+          created_at?: string | null
+          id?: string
+          marks_per_question?: number
+          not_attempted?: number
+          scored_marks?: number
+          subject_name?: string
+          test_entry_id?: string | null
+          total_questions?: number
+          wrong_answers?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subject_scores_test_entry_id_fkey"
+            columns: ["test_entry_id"]
+            isOneToOne: false
+            referencedRelation: "manual_test_entries"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       task_assignments: {
         Row: {
