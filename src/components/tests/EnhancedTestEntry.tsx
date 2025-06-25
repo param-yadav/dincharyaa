@@ -35,21 +35,43 @@ const EnhancedTestEntry = () => {
   const handleFormatSelect = (formatId: string) => {
     setSelectedFormatId(formatId);
     const format = testFormats?.find(f => f.id === formatId);
-    if (format?.subjects) {
-      setTestData(format.subjects.map(subject => ({
-        subject_name: subject.subject_name,
-        correct_answers: 0,
-        wrong_answers: 0,
-        total_questions: subject.total_questions,
-        marks_per_question: subject.marks_per_question,
-        negative_marking_ratio: subject.negative_marking_ratio,
-      })));
+    console.log("Selected format:", format);
+    
+    if (format?.subjects && format.subjects.length > 0) {
+      const initialTestData = format.subjects
+        .sort((a, b) => a.subject_order - b.subject_order)
+        .map(subject => ({
+          subject_name: subject.subject_name,
+          correct_answers: 0,
+          wrong_answers: 0,
+          total_questions: subject.total_questions,
+          marks_per_question: subject.marks_per_question,
+          negative_marking_ratio: subject.negative_marking_ratio,
+        }));
+      
+      console.log("Setting test data:", initialTestData);
+      setTestData(initialTestData);
+    } else {
+      console.log("No subjects found for format");
+      setTestData([]);
     }
   };
 
   const updateTestData = (index: number, field: 'correct_answers' | 'wrong_answers', value: number) => {
     const updated = [...testData];
-    updated[index] = { ...updated[index], [field]: value };
+    const maxValue = updated[index].total_questions;
+    
+    // Ensure value doesn't exceed total questions
+    const constrainedValue = Math.min(Math.max(0, value), maxValue);
+    updated[index] = { ...updated[index], [field]: constrainedValue };
+    
+    // Auto-adjust the other field if sum exceeds total
+    const otherField = field === 'correct_answers' ? 'wrong_answers' : 'correct_answers';
+    const sum = updated[index].correct_answers + updated[index].wrong_answers;
+    if (sum > maxValue) {
+      updated[index][otherField] = Math.max(0, maxValue - constrainedValue);
+    }
+    
     setTestData(updated);
   };
 
@@ -71,6 +93,16 @@ const EnhancedTestEntry = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!testName.trim() || testData.length === 0) return;
+
+    console.log("Submitting test data:", {
+      format_id: selectedFormatId || undefined,
+      test_name: testName,
+      test_date: testDate,
+      time_taken_minutes: timeTaken,
+      overall_percentage: overallPercentage,
+      overall_percentile: overallPercentile,
+      subjects: testData,
+    });
 
     await createEnhancedTest.mutateAsync({
       format_id: selectedFormatId || undefined,
@@ -186,76 +218,100 @@ const EnhancedTestEntry = () => {
               </div>
             </div>
 
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-dincharya-text dark:text-white">Subject-wise Performance</h3>
-              
-              {testData.map((subject, index) => {
-                const stats = calculateSubjectStats(subject);
-                return (
-                  <Card key={index} className="p-4 bg-gray-50 dark:bg-dincharya-text/50">
-                    <div className="space-y-4">
-                      <h4 className="font-medium text-dincharya-text dark:text-white">
-                        {subject.subject_name}
-                      </h4>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="space-y-2">
-                          <Label>Correct Answers</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            max={subject.total_questions}
-                            value={subject.correct_answers}
-                            onChange={(e) => updateTestData(index, 'correct_answers', parseInt(e.target.value) || 0)}
-                          />
+            {testData.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-dincharya-text dark:text-white">Subject-wise Performance</h3>
+                
+                {testData.map((subject, index) => {
+                  const stats = calculateSubjectStats(subject);
+                  return (
+                    <Card key={index} className="p-4 bg-gray-50 dark:bg-dincharya-text/50">
+                      <div className="space-y-4">
+                        <h4 className="font-medium text-dincharya-text dark:text-white">
+                          {subject.subject_name} (Total: {subject.total_questions} questions)
+                        </h4>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div className="space-y-2">
+                            <Label>Correct Answers</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              max={subject.total_questions}
+                              value={subject.correct_answers}
+                              onChange={(e) => updateTestData(index, 'correct_answers', parseInt(e.target.value) || 0)}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Wrong Answers</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              max={subject.total_questions}
+                              value={subject.wrong_answers}
+                              onChange={(e) => updateTestData(index, 'wrong_answers', parseInt(e.target.value) || 0)}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Not Attempted</Label>
+                            <Input
+                              type="number"
+                              value={stats.notAttempted}
+                              disabled
+                              className="bg-gray-200"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Net Marks</Label>
+                            <Input
+                              type="number"
+                              value={stats.netMarks.toFixed(2)}
+                              disabled
+                              className="bg-gray-200 font-bold"
+                            />
+                          </div>
                         </div>
-                        <div className="space-y-2">
-                          <Label>Wrong Answers</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            max={subject.total_questions}
-                            value={subject.wrong_answers}
-                            onChange={(e) => updateTestData(index, 'wrong_answers', parseInt(e.target.value) || 0)}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Not Attempted</Label>
-                          <Input
-                            type="number"
-                            value={stats.notAttempted}
-                            disabled
-                            className="bg-gray-200"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Net Marks</Label>
-                          <Input
-                            type="number"
-                            value={stats.netMarks.toFixed(2)}
-                            disabled
-                            className="bg-gray-200 font-bold"
-                          />
+                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                          Positive: +{stats.scoredMarks} | 
+                          Negative: -{stats.negativeMarks.toFixed(2)} | 
+                          Net: {stats.netMarks.toFixed(2)} marks
                         </div>
                       </div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">
-                        Total Questions: {subject.total_questions} | 
-                        Positive: +{stats.scoredMarks} | 
-                        Negative: -{stats.negativeMarks.toFixed(2)} | 
-                        Net: {stats.netMarks.toFixed(2)}
-                      </div>
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
-
-            <div className="flex items-center justify-between pt-4 border-t">
-              <div className="text-lg font-semibold text-dincharya-text dark:text-white">
-                Total Score: {calculateTotalMarks().toFixed(2)} marks
+                    </Card>
+                  );
+                })}
               </div>
+            )}
+
+            {testData.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-dincharya-text dark:text-white">Score Preview</h3>
+                <div className="bg-gray-50 dark:bg-dincharya-text/30 p-4 rounded-lg">
+                  {testData.map((subject, index) => {
+                    const stats = calculateSubjectStats(subject);
+                    return (
+                      <div key={index} className="flex justify-between items-center py-2">
+                        <span className="font-medium">{subject.subject_name}:</span>
+                        <span>
+                          {subject.correct_answers}C, {subject.wrong_answers}W, {stats.notAttempted}NA = 
+                          <span className="font-bold text-green-600 ml-1">{stats.netMarks.toFixed(2)} marks</span>
+                        </span>
+                      </div>
+                    );
+                  })}
+                  <div className="border-t pt-2 mt-2 flex justify-between items-center">
+                    <span className="text-lg font-bold">Total Marks:</span>
+                    <span className="text-xl font-bold text-dincharya-primary">
+                      {calculateTotalMarks().toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end pt-4 border-t">
               <Button 
                 type="submit" 
-                disabled={createEnhancedTest.isPending}
+                disabled={createEnhancedTest.isPending || testData.length === 0}
                 className="bg-dincharya-primary hover:bg-dincharya-secondary"
               >
                 {createEnhancedTest.isPending ? "Saving..." : "Save Test Scores"}
