@@ -12,32 +12,52 @@ export type Database = {
       manual_test_entries: {
         Row: {
           created_at: string | null
+          format_id: string | null
           id: string
+          overall_percentage: number | null
+          overall_percentile: number | null
           test_date: string
           test_name: string
+          time_taken_minutes: number | null
           total_marks: number
           updated_at: string | null
           user_id: string
         }
         Insert: {
           created_at?: string | null
+          format_id?: string | null
           id?: string
+          overall_percentage?: number | null
+          overall_percentile?: number | null
           test_date: string
           test_name: string
+          time_taken_minutes?: number | null
           total_marks?: number
           updated_at?: string | null
           user_id: string
         }
         Update: {
           created_at?: string | null
+          format_id?: string | null
           id?: string
+          overall_percentage?: number | null
+          overall_percentile?: number | null
           test_date?: string
           test_name?: string
+          time_taken_minutes?: number | null
           total_marks?: number
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "manual_test_entries_format_id_fkey"
+            columns: ["format_id"]
+            isOneToOne: false
+            referencedRelation: "test_formats"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notes: {
         Row: {
@@ -186,6 +206,8 @@ export type Database = {
           created_at: string | null
           id: string
           marks_per_question: number
+          negative_marks: number | null
+          net_marks: number | null
           not_attempted: number
           scored_marks: number
           subject_name: string
@@ -198,6 +220,8 @@ export type Database = {
           created_at?: string | null
           id?: string
           marks_per_question?: number
+          negative_marks?: number | null
+          net_marks?: number | null
           not_attempted?: number
           scored_marks?: number
           subject_name: string
@@ -210,6 +234,8 @@ export type Database = {
           created_at?: string | null
           id?: string
           marks_per_question?: number
+          negative_marks?: number | null
+          net_marks?: number | null
           not_attempted?: number
           scored_marks?: number
           subject_name?: string
@@ -455,6 +481,77 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      test_format_subjects: {
+        Row: {
+          created_at: string | null
+          format_id: string | null
+          id: string
+          marks_per_question: number
+          negative_marking_ratio: number
+          subject_name: string
+          subject_order: number
+          total_questions: number
+        }
+        Insert: {
+          created_at?: string | null
+          format_id?: string | null
+          id?: string
+          marks_per_question?: number
+          negative_marking_ratio?: number
+          subject_name: string
+          subject_order?: number
+          total_questions: number
+        }
+        Update: {
+          created_at?: string | null
+          format_id?: string | null
+          id?: string
+          marks_per_question?: number
+          negative_marking_ratio?: number
+          subject_name?: string
+          subject_order?: number
+          total_questions?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_format_subjects_format_id_fkey"
+            columns: ["format_id"]
+            isOneToOne: false
+            referencedRelation: "test_formats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      test_formats: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          format_name: string
+          id: string
+          total_time_minutes: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          format_name: string
+          id?: string
+          total_time_minutes?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          format_name?: string
+          id?: string
+          total_time_minutes?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       test_questions: {
         Row: {
