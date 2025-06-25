@@ -1,15 +1,12 @@
-
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { 
-  Calendar, 
   List, 
   Users, 
   Clock, 
   Timer, 
-  Watch, 
   FileText,
   FileChartColumn,
   Settings,
@@ -19,6 +16,7 @@ import {
   ChevronLeft,
   ChevronRight,
   User,
+  ClipboardList,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -128,7 +126,7 @@ const Sidebar = () => {
   
   const navItems = [
     { id: "tasks", label: "Task List", icon: List, path: "/tasks", implemented: true },
-    { id: "calendar", label: "Calendar", icon: Calendar, path: "/scheduler", implemented: true },
+    { id: "tests", label: "Tests", icon: ClipboardList, path: "/tests", implemented: true },
     { id: "team", label: "Team", icon: Users, path: "/team", implemented: true },
     { id: "notes", label: "Notes", icon: FileText, path: "/notes", implemented: true },
     { id: "timer", label: "Timer", icon: Timer, path: "/timer", implemented: true },
@@ -164,7 +162,7 @@ const Sidebar = () => {
 
       {/* Background Texture */}
       <div className="absolute inset-0 opacity-5 dark:opacity-5 pointer-events-none">
-        <div className="w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGcgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIj48cGF0aCBmaWxsPSIjQjg0QzE0IiBkPSJNMzYgMzRoLTJWMTZoMnpNNDAgMzRoLTJWMTZoMnpNOCAzNEg2VjE2aDJ6TTEyIDM0aC0yVjE2aDJ6Ii8+PHBhdGggZD0iTTYwIDBoLTJ2NjBoMnpNNDIgMGgtMnY2MGgyeiIgZmlsbD0iI0I4NEMxNCIvPjxwYXRoIGQ9Ik01MCAwbC01MCA1MEw1MCA2MHoiIHN0cm9rZT0iI0I4NEMxNCIvPjxwYXRoIGQ9Ik01MCAwbC01MCA1MEw1MCA2MHpNMTYtOGwtMjUgMjVMNDAgNjZ6TTU4LTE3bC0yNSAyNUw4MiA1N3oiIHN0cm9rZT0iI0I4NEMxNCIvPjwvZz48L3N2Zz4=')]" />
+        <div className="w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGcgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIj48cGF0aCBmaWxsPSIjQjg0QzE0IiBkPSJNMzYgMzRoLTJWMTZoMnpNNDAgMzRoLTJWMTZoMnpNOCA0aC0yVjE2aDJ6TTEyIDM0aC0yVjE2aDJ6Ii8+PHBhdGggZD0iTTYwIDBoLTJ2NjBoMnpNNDIgMGgtMnY2MGgyeiIgZmlsbD0iI0I4NEMxNCIvPjxwYXRoIGQ9Ik01MCAwbC01MCA1MEw1MCA2MHoiIHN0cm9rZT0iI0I4NEMxNCIvPjxwYXRoIGQ9Ik01MCAwbC01MCA1MEw1MCA2MHpNMTYtOGwtMjUgMjVMNDAgNjZ6TTU4LTE3bC0yNSAyNUw4MiA1N3oiIHN0cm9rZT0iI0I4NEMxNCIvPjwvZz48L3N2Zz4=')]" />
       </div>
 
       <div className={cn("p-4 flex items-center", isCollapsedCalc ? "justify-center" : "")}>

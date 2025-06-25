@@ -11,7 +11,7 @@ export interface TestFormat {
   total_time_minutes?: number;
   created_at: string;
   updated_at: string;
-  subjects?: TestFormatSubject[];
+  test_format_subjects?: TestFormatSubject[];
 }
 
 export interface TestFormatSubject {
@@ -29,6 +29,7 @@ export const useTestFormats = () => {
   return useQuery({
     queryKey: ["test-formats"],
     queryFn: async () => {
+      console.log("Fetching test formats...");
       const { data, error } = await supabase
         .from("test_formats")
         .select(`
@@ -37,7 +38,12 @@ export const useTestFormats = () => {
         `)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching test formats:", error);
+        throw error;
+      }
+      
+      console.log("Fetched test formats:", data);
       return (data || []) as unknown as TestFormat[];
     },
   });

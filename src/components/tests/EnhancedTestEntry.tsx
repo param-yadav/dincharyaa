@@ -33,12 +33,13 @@ const EnhancedTestEntry = () => {
   const selectedFormat = testFormats?.find(f => f.id === selectedFormatId);
 
   const handleFormatSelect = (formatId: string) => {
+    console.log("Format selected:", formatId);
     setSelectedFormatId(formatId);
     const format = testFormats?.find(f => f.id === formatId);
-    console.log("Selected format:", format);
+    console.log("Found format:", format);
     
-    if (format?.subjects && format.subjects.length > 0) {
-      const initialTestData = format.subjects
+    if (format?.test_format_subjects && format.test_format_subjects.length > 0) {
+      const initialTestData = format.test_format_subjects
         .sort((a, b) => a.subject_order - b.subject_order)
         .map(subject => ({
           subject_name: subject.subject_name,
