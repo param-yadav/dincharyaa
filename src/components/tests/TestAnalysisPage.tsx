@@ -278,7 +278,7 @@ const TestAnalysisPage = () => {
                     <td className="py-4 px-4">
                       {test.time_taken_minutes && (
                         <div className="text-sm font-medium text-gray-600">
-                          {Math.floor(test.time_taken_minutes / 60)}:{(test.time_taken_minutes % 60).toString().padStart(2, '0')} / {test.test_format?.total_time_minutes ? `${test.test_format.total_time_minutes} min` : '-- min'}
+                          {Math.floor(test.time_taken_minutes / 60)}:{(test.time_taken_minutes % 60).toString().padStart(2, '0')} min
                         </div>
                       )}
                     </td>
