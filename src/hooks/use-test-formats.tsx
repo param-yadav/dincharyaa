@@ -116,3 +116,78 @@ export const useCreateTestFormat = () => {
     },
   });
 };
+
+export const useUpdateTestFormat = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: { 
+      id: string; 
+      formatData: {
+        format_name: string;
+        description?: string;
+        total_time_minutes?: number;
+      }
+    }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
+
+      const { error } = await supabase
+        .from("test_formats")
+        .update(data.formatData)
+        .eq("id", data.id)
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+      return data.id;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["test-formats"] });
+      toast({
+        title: "Success",
+        description: "Test format updated successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+export const useDeleteTestFormat = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (formatId: string) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
+
+      const { error } = await supabase
+        .from("test_formats")
+        .delete()
+        .eq("id", formatId)
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+      return formatId;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["test-formats"] });
+      toast({
+        title: "Success",
+        description: "Test format deleted successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+};

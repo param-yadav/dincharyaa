@@ -13,11 +13,16 @@ export interface EnhancedManualTestEntry {
   time_taken_minutes?: number;
   overall_percentage?: number;
   overall_percentile?: number;
+  total_questions: number;
+  total_correct: number;
+  total_wrong: number;
+  total_not_attempted: number;
   created_at: string;
   subjects: EnhancedSubjectScore[];
   test_format?: {
     format_name: string;
     description?: string;
+    total_time_minutes?: number;
   };
 }
 
@@ -46,7 +51,8 @@ export const useEnhancedManualTests = () => {
           subject_scores (*),
           test_formats (
             format_name,
-            description
+            description,
+            total_time_minutes
           )
         `)
         .order("test_date", { ascending: false });
@@ -80,8 +86,13 @@ export const useCreateEnhancedManualTest = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
 
-      // Calculate total marks and negative marks for each subject
+      // Calculate aggregated data
       let total_marks = 0;
+      let total_questions = 0;
+      let total_correct = 0;
+      let total_wrong = 0;
+      let total_not_attempted = 0;
+
       const processedSubjects = testData.subjects.map(subject => {
         const scored_marks = subject.correct_answers * subject.marks_per_question;
         const negative_marks = subject.wrong_answers * subject.marks_per_question * subject.negative_marking_ratio;
@@ -89,6 +100,10 @@ export const useCreateEnhancedManualTest = () => {
         const not_attempted = subject.total_questions - subject.correct_answers - subject.wrong_answers;
         
         total_marks += net_marks;
+        total_questions += subject.total_questions;
+        total_correct += subject.correct_answers;
+        total_wrong += subject.wrong_answers;
+        total_not_attempted += not_attempted;
         
         return {
           subject_name: subject.subject_name,
@@ -103,7 +118,7 @@ export const useCreateEnhancedManualTest = () => {
         };
       });
 
-      // Create test entry
+      // Create test entry with aggregated data
       const { data: testEntry, error: testError } = await supabase
         .from("manual_test_entries")
         .insert({
@@ -112,6 +127,10 @@ export const useCreateEnhancedManualTest = () => {
           test_name: testData.test_name,
           test_date: testData.test_date,
           total_marks,
+          total_questions,
+          total_correct,
+          total_wrong,
+          total_not_attempted,
           time_taken_minutes: testData.time_taken_minutes,
           overall_percentage: testData.overall_percentage,
           overall_percentile: testData.overall_percentile,
@@ -141,6 +160,75 @@ export const useCreateEnhancedManualTest = () => {
       toast({
         title: "Success",
         description: "Test scores added successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+export const useUpdateManualTest = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: { id: string; testData: any }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
+
+      // Update test entry
+      const { error: testError } = await supabase
+        .from("manual_test_entries")
+        .update(data.testData)
+        .eq("id", data.id)
+        .eq("user_id", user.id);
+
+      if (testError) throw testError;
+      return data.id;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["enhanced-manual-tests"] });
+      toast({
+        title: "Success",
+        description: "Test updated successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+export const useDeleteManualTest = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (testId: string) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
+
+      const { error } = await supabase
+        .from("manual_test_entries")
+        .delete()
+        .eq("id", testId)
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+      return testId;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["enhanced-manual-tests"] });
+      toast({
+        title: "Success",
+        description: "Test deleted successfully",
       });
     },
     onError: (error: any) => {

@@ -3,7 +3,7 @@ import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import EnhancedTestEntry from "@/components/tests/EnhancedTestEntry";
 import EnhancedTestHistory from "@/components/tests/EnhancedTestHistory";
-import ManualTestAnalytics from "@/components/tests/ManualTestAnalytics";
+import EnhancedAnalytics from "@/components/tests/EnhancedAnalytics";
 
 const TestsPage = () => {
   return (
@@ -31,7 +31,7 @@ const TestsPage = () => {
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-6">
-            <ManualTestAnalytics />
+            <EnhancedAnalytics />
           </TabsContent>
         </Tabs>
       </div>

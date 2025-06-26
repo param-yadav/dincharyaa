@@ -19,7 +19,11 @@ export type Database = {
           test_date: string
           test_name: string
           time_taken_minutes: number | null
+          total_correct: number | null
           total_marks: number
+          total_not_attempted: number | null
+          total_questions: number | null
+          total_wrong: number | null
           updated_at: string | null
           user_id: string
         }
@@ -32,7 +36,11 @@ export type Database = {
           test_date: string
           test_name: string
           time_taken_minutes?: number | null
+          total_correct?: number | null
           total_marks?: number
+          total_not_attempted?: number | null
+          total_questions?: number | null
+          total_wrong?: number | null
           updated_at?: string | null
           user_id: string
         }
@@ -45,7 +53,11 @@ export type Database = {
           test_date?: string
           test_name?: string
           time_taken_minutes?: number | null
+          total_correct?: number | null
           total_marks?: number
+          total_not_attempted?: number | null
+          total_questions?: number | null
+          total_wrong?: number | null
           updated_at?: string | null
           user_id?: string
         }

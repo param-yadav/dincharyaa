@@ -35,16 +35,9 @@ const TestAnalysisPage = () => {
     );
   }
 
-  const totalQuestions = test.subjects?.reduce((sum, subject) => 
-    sum + subject.total_questions, 0) || 0;
-  
-  const totalAttempted = test.subjects?.reduce((sum, subject) => 
-    sum + subject.correct_answers + subject.wrong_answers, 0) || 0;
-  
-  const totalCorrect = test.subjects?.reduce((sum, subject) => 
-    sum + subject.correct_answers, 0) || 0;
-  
-  const overallAccuracy = totalAttempted > 0 ? (totalCorrect / totalAttempted) * 100 : 0;
+  const overallAccuracy = test.total_correct + test.total_wrong > 0 
+    ? (test.total_correct / (test.total_correct + test.total_wrong)) * 100 
+    : 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-dincharya-background to-dincharya-muted/20 p-6">
@@ -108,7 +101,7 @@ const TestAnalysisPage = () => {
                 </div>
                 <div>
                   <div className="text-2xl font-bold text-dincharya-text">
-                    {totalAttempted} / {totalQuestions}
+                    {test.total_correct + test.total_wrong} / {test.total_questions}
                   </div>
                   <div className="text-sm text-gray-500">Attempted</div>
                 </div>
@@ -177,7 +170,7 @@ const TestAnalysisPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {test.subjects?.map((subject, index) => {
+                  {test.subjects?.map((subject) => {
                     const attempted = subject.correct_answers + subject.wrong_answers;
                     const accuracy = attempted > 0 ? (subject.correct_answers / attempted) * 100 : 0;
                     
@@ -256,11 +249,11 @@ const TestAnalysisPage = () => {
                         <div className="w-20 h-3 bg-gray-200 rounded-full">
                           <div 
                             className="h-3 bg-cyan-500 rounded-full" 
-                            style={{ width: `${Math.max(10, (totalAttempted / totalQuestions) * 100)}%` }}
+                            style={{ width: `${Math.max(10, ((test.total_correct + test.total_wrong) / test.total_questions) * 100)}%` }}
                           />
                         </div>
                         <span className="font-bold text-dincharya-text">
-                          {totalAttempted} / {totalQuestions}
+                          {test.total_correct + test.total_wrong} / {test.total_questions}
                         </span>
                       </div>
                     </td>
