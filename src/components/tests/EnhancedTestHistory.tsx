@@ -2,12 +2,15 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, BarChart3, Clock, Target, TrendingUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar, BarChart3, Clock, Target, TrendingUp, Activity } from "lucide-react";
 import { useEnhancedManualTests } from "@/hooks/use-enhanced-manual-tests";
 import { format } from "date-fns";
+import { useNavigate } from "react-router-dom";
 
 const EnhancedTestHistory = () => {
   const { data: tests, isLoading } = useEnhancedManualTests();
+  const navigate = useNavigate();
 
   if (isLoading) {
     return (
@@ -45,7 +48,7 @@ const EnhancedTestHistory = () => {
   return (
     <div className="space-y-4">
       {tests.map((test) => (
-        <Card key={test.id} className="bg-white dark:bg-dincharya-text/90 border-dincharya-border/20">
+        <Card key={test.id} className="bg-white dark:bg-dincharya-text/90 border-dincharya-border/20 hover:shadow-lg transition-shadow">
           <CardHeader>
             <div className="flex justify-between items-start">
               <div className="space-y-2">
@@ -80,9 +83,19 @@ const EnhancedTestHistory = () => {
                   )}
                 </div>
               </div>
-              <Badge variant="secondary" className="text-lg px-3 py-1">
-                {test.total_marks.toFixed(2)} marks
-              </Badge>
+              <div className="flex flex-col items-end gap-3">
+                <Badge variant="secondary" className="text-lg px-3 py-1">
+                  {test.total_marks.toFixed(2)} marks
+                </Badge>
+                <Button 
+                  onClick={() => navigate(`/tests/analysis/${test.id}`)}
+                  className="bg-dincharya-primary hover:bg-dincharya-primary/90 text-white"
+                  size="sm"
+                >
+                  <Activity className="h-4 w-4 mr-2" />
+                  Analysis
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
