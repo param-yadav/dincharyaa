@@ -1281,6 +1281,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      auto_complete_time_entry: {
+        Args: { p_entry_id: string }
+        Returns: undefined
+      }
+      calculate_daily_productivity_insights: {
+        Args: { p_user_id: string; p_date: string }
+        Returns: undefined
+      }
       calculate_test_score: {
         Args: { p_attempt_id: string }
         Returns: number
@@ -1315,6 +1323,17 @@ export type Database = {
         Args: { email: string }
         Returns: string
       }
+      get_productivity_analytics: {
+        Args: { p_user_id: string; p_start_date: string; p_end_date: string }
+        Returns: {
+          date: string
+          total_productive_time: number
+          total_break_time: number
+          focus_score: number
+          energy_trend: number
+          top_category: Database["public"]["Enums"]["productivity_category"]
+        }[]
+      }
       get_user_task_assignments: {
         Args: { user_id: string }
         Returns: Json[]
@@ -1335,6 +1354,17 @@ export type Database = {
           p_rejection_reason?: string
         }
         Returns: boolean
+      }
+      start_time_entry: {
+        Args: {
+          p_user_id: string
+          p_title: string
+          p_category: Database["public"]["Enums"]["productivity_category"]
+          p_description?: string
+          p_task_id?: string
+          p_goal_id?: string
+        }
+        Returns: string
       }
     }
     Enums: {
