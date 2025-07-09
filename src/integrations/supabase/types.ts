@@ -14,6 +14,178 @@ export type Database = {
   }
   public: {
     Tables: {
+      daily_routines: {
+        Row: {
+          completion_percentage: number | null
+          created_at: string | null
+          date: string
+          id: string
+          template_id: string
+          total_time_minutes: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          completion_percentage?: number | null
+          created_at?: string | null
+          date: string
+          id?: string
+          template_id: string
+          total_time_minutes?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          completion_percentage?: number | null
+          created_at?: string | null
+          date?: string
+          id?: string
+          template_id?: string
+          total_time_minutes?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_daily_routines_template"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "routine_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      goals: {
+        Row: {
+          category: Database["public"]["Enums"]["productivity_category"]
+          created_at: string | null
+          current_value: number | null
+          description: string | null
+          id: string
+          priority: Database["public"]["Enums"]["priority_level"] | null
+          status: Database["public"]["Enums"]["status_type"] | null
+          target_date: string | null
+          target_value: number | null
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["productivity_category"]
+          created_at?: string | null
+          current_value?: number | null
+          description?: string | null
+          id?: string
+          priority?: Database["public"]["Enums"]["priority_level"] | null
+          status?: Database["public"]["Enums"]["status_type"] | null
+          target_date?: string | null
+          target_value?: number | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["productivity_category"]
+          created_at?: string | null
+          current_value?: number | null
+          description?: string | null
+          id?: string
+          priority?: Database["public"]["Enums"]["priority_level"] | null
+          status?: Database["public"]["Enums"]["status_type"] | null
+          target_date?: string | null
+          target_value?: number | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      habit_logs: {
+        Row: {
+          completed: boolean | null
+          count: number | null
+          created_at: string | null
+          date: string
+          habit_id: string
+          id: string
+          mood: string | null
+          notes: string | null
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          count?: number | null
+          created_at?: string | null
+          date: string
+          habit_id: string
+          id?: string
+          mood?: string | null
+          notes?: string | null
+          user_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          count?: number | null
+          created_at?: string | null
+          date?: string
+          habit_id?: string
+          id?: string
+          mood?: string | null
+          notes?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_habit_logs_habit"
+            columns: ["habit_id"]
+            isOneToOne: false
+            referencedRelation: "habits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      habits: {
+        Row: {
+          category: Database["public"]["Enums"]["productivity_category"]
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          reminder_time: string | null
+          target_count: number | null
+          target_frequency: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["productivity_category"]
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          reminder_time?: string | null
+          target_count?: number | null
+          target_frequency: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["productivity_category"]
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          reminder_time?: string | null
+          target_count?: number | null
+          target_frequency?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       manual_test_entries: {
         Row: {
           created_at: string | null
@@ -142,6 +314,114 @@ export type Database = {
         }
         Relationships: []
       }
+      pomodoro_sessions: {
+        Row: {
+          break_duration_minutes: number
+          completed: boolean | null
+          created_at: string | null
+          duration_minutes: number
+          id: string
+          interrupted_at: string | null
+          interruption_reason: string | null
+          productivity_rating: number | null
+          task_id: string | null
+          time_entry_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          break_duration_minutes?: number
+          completed?: boolean | null
+          created_at?: string | null
+          duration_minutes?: number
+          id?: string
+          interrupted_at?: string | null
+          interruption_reason?: string | null
+          productivity_rating?: number | null
+          task_id?: string | null
+          time_entry_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          break_duration_minutes?: number
+          completed?: boolean | null
+          created_at?: string | null
+          duration_minutes?: number
+          id?: string
+          interrupted_at?: string | null
+          interruption_reason?: string | null
+          productivity_rating?: number | null
+          task_id?: string | null
+          time_entry_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_pomodoro_task"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_pomodoro_time_entry"
+            columns: ["time_entry_id"]
+            isOneToOne: false
+            referencedRelation: "time_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      productivity_insights: {
+        Row: {
+          created_at: string | null
+          date: string
+          energy_trend: number | null
+          focus_score: number | null
+          id: string
+          insights_data: Json | null
+          mood_trend: number | null
+          top_category:
+            | Database["public"]["Enums"]["productivity_category"]
+            | null
+          total_break_time: number | null
+          total_productive_time: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          energy_trend?: number | null
+          focus_score?: number | null
+          id?: string
+          insights_data?: Json | null
+          mood_trend?: number | null
+          top_category?:
+            | Database["public"]["Enums"]["productivity_category"]
+            | null
+          total_break_time?: number | null
+          total_productive_time?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          energy_trend?: number | null
+          focus_score?: number | null
+          id?: string
+          insights_data?: Json | null
+          mood_trend?: number | null
+          top_category?:
+            | Database["public"]["Enums"]["productivity_category"]
+            | null
+          total_break_time?: number | null
+          total_productive_time?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -172,6 +452,147 @@ export type Database = {
           location?: string | null
           phone?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      routine_executions: {
+        Row: {
+          actual_duration_minutes: number | null
+          actual_end_time: string | null
+          actual_start_time: string | null
+          created_at: string | null
+          daily_routine_id: string
+          id: string
+          notes: string | null
+          routine_item_id: string
+          status: Database["public"]["Enums"]["status_type"] | null
+          time_entry_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          actual_duration_minutes?: number | null
+          actual_end_time?: string | null
+          actual_start_time?: string | null
+          created_at?: string | null
+          daily_routine_id: string
+          id?: string
+          notes?: string | null
+          routine_item_id: string
+          status?: Database["public"]["Enums"]["status_type"] | null
+          time_entry_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          actual_duration_minutes?: number | null
+          actual_end_time?: string | null
+          actual_start_time?: string | null
+          created_at?: string | null
+          daily_routine_id?: string
+          id?: string
+          notes?: string | null
+          routine_item_id?: string
+          status?: Database["public"]["Enums"]["status_type"] | null
+          time_entry_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_routine_executions_daily"
+            columns: ["daily_routine_id"]
+            isOneToOne: false
+            referencedRelation: "daily_routines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_routine_executions_item"
+            columns: ["routine_item_id"]
+            isOneToOne: false
+            referencedRelation: "routine_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_routine_executions_time"
+            columns: ["time_entry_id"]
+            isOneToOne: false
+            referencedRelation: "time_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      routine_items: {
+        Row: {
+          category: Database["public"]["Enums"]["productivity_category"]
+          created_at: string | null
+          description: string | null
+          duration_minutes: number
+          id: string
+          is_mandatory: boolean | null
+          order_index: number
+          start_time: string
+          template_id: string
+          title: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["productivity_category"]
+          created_at?: string | null
+          description?: string | null
+          duration_minutes: number
+          id?: string
+          is_mandatory?: boolean | null
+          order_index: number
+          start_time: string
+          template_id: string
+          title: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["productivity_category"]
+          created_at?: string | null
+          description?: string | null
+          duration_minutes?: number
+          id?: string
+          is_mandatory?: boolean | null
+          order_index?: number
+          start_time?: string
+          template_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_routine_items_template"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "routine_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      routine_templates: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -750,6 +1171,81 @@ export type Database = {
           },
         ]
       }
+      time_entries: {
+        Row: {
+          category: Database["public"]["Enums"]["productivity_category"]
+          created_at: string | null
+          description: string | null
+          duration_minutes: number | null
+          end_time: string | null
+          energy_level: number | null
+          goal_id: string | null
+          id: string
+          location: string | null
+          mood: string | null
+          productivity_rating: number | null
+          start_time: string
+          tags: string[] | null
+          task_id: string | null
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["productivity_category"]
+          created_at?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          end_time?: string | null
+          energy_level?: number | null
+          goal_id?: string | null
+          id?: string
+          location?: string | null
+          mood?: string | null
+          productivity_rating?: number | null
+          start_time: string
+          tags?: string[] | null
+          task_id?: string | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["productivity_category"]
+          created_at?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          end_time?: string | null
+          energy_level?: number | null
+          goal_id?: string | null
+          id?: string
+          location?: string | null
+          mood?: string | null
+          productivity_rating?: number | null
+          start_time?: string
+          tags?: string[] | null
+          task_id?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_time_entries_goal"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_time_entries_task"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       timer_sessions: {
         Row: {
           created_at: string
@@ -842,7 +1338,22 @@ export type Database = {
       }
     }
     Enums: {
+      priority_level: "low" | "medium" | "high" | "urgent"
+      productivity_category:
+        | "work"
+        | "study"
+        | "exercise"
+        | "personal"
+        | "break"
+        | "meeting"
+        | "project"
       question_type: "multiple_choice" | "true_false"
+      status_type:
+        | "pending"
+        | "in_progress"
+        | "completed"
+        | "cancelled"
+        | "paused"
       test_type: "daily" | "custom"
     }
     CompositeTypes: {
@@ -971,7 +1482,24 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      priority_level: ["low", "medium", "high", "urgent"],
+      productivity_category: [
+        "work",
+        "study",
+        "exercise",
+        "personal",
+        "break",
+        "meeting",
+        "project",
+      ],
       question_type: ["multiple_choice", "true_false"],
+      status_type: [
+        "pending",
+        "in_progress",
+        "completed",
+        "cancelled",
+        "paused",
+      ],
       test_type: ["daily", "custom"],
     },
   },
