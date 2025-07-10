@@ -23,8 +23,8 @@ const TimeTracker = () => {
     title: "",
     category: "work" as ProductivityCategory,
     description: "",
-    task_id: "",
-    goal_id: ""
+    task_id: "none",
+    goal_id: "none"
   });
 
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -50,16 +50,16 @@ const TimeTracker = () => {
       title: newEntry.title,
       category: newEntry.category,
       description: newEntry.description || undefined,
-      task_id: newEntry.task_id || undefined,
-      goal_id: newEntry.goal_id || undefined
+      task_id: newEntry.task_id === "none" ? undefined : newEntry.task_id,
+      goal_id: newEntry.goal_id === "none" ? undefined : newEntry.goal_id
     });
 
     setNewEntry({
       title: "",
       category: "work",
       description: "",
-      task_id: "",
-      goal_id: ""
+      task_id: "none",
+      goal_id: "none"
     });
   };
 
@@ -170,7 +170,7 @@ const TimeTracker = () => {
                       <SelectValue placeholder="Select a goal" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="none">None</SelectItem>
                       {goals.map((goal) => (
                         <SelectItem key={goal.id} value={goal.id}>
                           {goal.title}
@@ -188,7 +188,7 @@ const TimeTracker = () => {
                       <SelectValue placeholder="Select a task" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="none">None</SelectItem>
                       {/* Tasks will be populated from tasks hook */}
                     </SelectContent>
                   </Select>
