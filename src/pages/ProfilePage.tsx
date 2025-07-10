@@ -8,7 +8,7 @@ const ProfilePage = () => {
       <div className="container mx-auto p-6">
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-dincharya-text dark:text-white mb-2">Profile</h1>
-          <p className="text-gray-600 dark:text-gray-400">Manage your personal information</p>
+          <p className="text-gray-600 dark:text-gray-400">Manage your personal information and account settings</p>
         </div>
         
         <ProfileEditor />

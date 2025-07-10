@@ -1,15 +1,14 @@
-
 import React, { useState, useEffect } from "react";
+import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useAuth } from "@/hooks/use-auth";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { User, Mail, Phone, MapPin, FileText } from "lucide-react";
+import { Loader2, Camera, User, Mail, Calendar, MapPin, Phone, LogOut } from "lucide-react";
 
 interface Profile {
   id: string;
@@ -21,11 +20,10 @@ interface Profile {
 }
 
 const ProfileEditor = () => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-
   const [formData, setFormData] = useState({
     full_name: "",
     bio: "",
@@ -40,15 +38,13 @@ const ProfileEditor = () => {
   }, [user]);
 
   const fetchProfile = async () => {
-    if (!user) return;
-
     try {
       setLoading(true);
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
-        .eq("id", user.id)
-        .single();
+        .eq("id", user?.id)
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
         throw error;
@@ -62,12 +58,29 @@ const ProfileEditor = () => {
           phone: data.phone || "",
           location: data.location || "",
         });
+      } else {
+        // Create profile if it doesn't exist
+        const newProfile = {
+          id: user?.id,
+          full_name: "",
+          bio: "",
+          phone: "",
+          location: "",
+        };
+        
+        const { error: insertError } = await supabase
+          .from("profiles")
+          .insert([newProfile]);
+
+        if (insertError) throw insertError;
+        
+        setProfile(newProfile);
       }
     } catch (error: any) {
       console.error("Error fetching profile:", error);
       toast({
-        title: "Error",
-        description: "Failed to load profile",
+        title: "Error loading profile",
+        description: error.message,
         variant: "destructive",
       });
     } finally {
@@ -76,14 +89,12 @@ const ProfileEditor = () => {
   };
 
   const saveProfile = async () => {
-    if (!user) return;
-
     try {
       setSaving(true);
       const { error } = await supabase
         .from("profiles")
         .upsert({
-          id: user.id,
+          id: user?.id,
           ...formData,
           updated_at: new Date().toISOString(),
         });
@@ -92,15 +103,16 @@ const ProfileEditor = () => {
 
       toast({
         title: "Profile updated",
-        description: "Your profile has been updated successfully",
+        description: "Your profile has been successfully updated.",
       });
 
+      // Refresh profile data
       await fetchProfile();
     } catch (error: any) {
       console.error("Error saving profile:", error);
       toast({
-        title: "Error",
-        description: "Failed to update profile",
+        title: "Error saving profile",
+        description: error.message,
         variant: "destructive",
       });
     } finally {
@@ -111,126 +123,155 @@ const ProfileEditor = () => {
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
-      [field]: value,
+      [field]: value
     }));
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-gray-500">Loading profile...</p>
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     );
   }
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <Card className="bg-white/80 backdrop-blur-sm border border-white/20 shadow-lg">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-xl">
-            <User className="w-5 h-5" />
-            Profile Information
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Profile Picture */}
-          <div className="flex items-center space-x-4">
-            <Avatar className="h-16 w-16">
-              <AvatarImage src={profile?.avatar_url} />
-              <AvatarFallback className="bg-gradient-to-br from-purple-400 to-pink-400 text-white text-lg">
-                {formData.full_name 
-                  ? formData.full_name.substring(0, 2).toUpperCase()
-                  : user?.email?.substring(0, 2).toUpperCase()
-                }
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="text-sm font-medium text-gray-700">Profile Picture</p>
-              <p className="text-xs text-gray-500">Coming soon</p>
+      {/* Profile Header */}
+      <Card>
+        <CardHeader className="text-center">
+          <div className="flex justify-center mb-4">
+            <div className="relative">
+              <Avatar className="h-24 w-24">
+                <AvatarImage src={profile?.avatar_url} />
+                <AvatarFallback className="text-2xl bg-dincharya-primary/20 text-dincharya-primary">
+                  {formData.full_name 
+                    ? formData.full_name.substring(0, 2).toUpperCase()
+                    : user?.email?.substring(0, 2).toUpperCase()
+                  }
+                </AvatarFallback>
+              </Avatar>
+              <Button
+                size="sm"
+                variant="outline"
+                className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full p-0"
+              >
+                <Camera className="h-4 w-4" />
+              </Button>
             </div>
           </div>
+          <CardTitle className="text-2xl">{formData.full_name || "Your Profile"}</CardTitle>
+          <CardDescription className="flex items-center justify-center gap-2">
+            <Mail className="h-4 w-4" />
+            {user?.email}
+          </CardDescription>
+        </CardHeader>
+      </Card>
 
-          {/* Email (readonly) */}
+      {/* Basic Information */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Basic Information</CardTitle>
+          <CardDescription>
+            Update your personal information and bio
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label className="flex items-center gap-2 text-sm font-medium">
-              <Mail className="w-4 h-4" />
-              Email
-            </Label>
-            <Input
-              value={user?.email || ""}
-              disabled
-              className="bg-gray-50"
-            />
-            <p className="text-xs text-gray-500">Email cannot be changed</p>
-          </div>
-
-          {/* Full Name */}
-          <div className="space-y-2">
-            <Label htmlFor="full_name" className="flex items-center gap-2 text-sm font-medium">
-              <User className="w-4 h-4" />
-              Full Name
-            </Label>
+            <Label htmlFor="full_name">Full Name</Label>
             <Input
               id="full_name"
-              placeholder="Enter your full name"
               value={formData.full_name}
               onChange={(e) => handleInputChange("full_name", e.target.value)}
+              placeholder="Enter your full name"
             />
           </div>
 
-          {/* Bio */}
           <div className="space-y-2">
-            <Label htmlFor="bio" className="flex items-center gap-2 text-sm font-medium">
-              <FileText className="w-4 h-4" />
-              Bio
-            </Label>
+            <Label htmlFor="bio">Bio</Label>
             <Textarea
               id="bio"
-              placeholder="Tell us about yourself"
               value={formData.bio}
               onChange={(e) => handleInputChange("bio", e.target.value)}
+              placeholder="Tell us about yourself..."
               rows={3}
             />
           </div>
 
-          {/* Phone */}
-          <div className="space-y-2">
-            <Label htmlFor="phone" className="flex items-center gap-2 text-sm font-medium">
-              <Phone className="w-4 h-4" />
-              Phone
-            </Label>
-            <Input
-              id="phone"
-              placeholder="Enter your phone number"
-              value={formData.phone}
-              onChange={(e) => handleInputChange("phone", e.target.value)}
-            />
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="phone" className="flex items-center gap-2">
+                <Phone className="h-4 w-4" />
+                Phone
+              </Label>
+              <Input
+                id="phone"
+                value={formData.phone}
+                onChange={(e) => handleInputChange("phone", e.target.value)}
+                placeholder="Your phone number"
+              />
+            </div>
 
-          {/* Location */}
-          <div className="space-y-2">
-            <Label htmlFor="location" className="flex items-center gap-2 text-sm font-medium">
-              <MapPin className="w-4 h-4" />
-              Location
-            </Label>
-            <Input
-              id="location"
-              placeholder="Enter your location"
-              value={formData.location}
-              onChange={(e) => handleInputChange("location", e.target.value)}
-            />
+            <div className="space-y-2">
+              <Label htmlFor="location" className="flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                Location
+              </Label>
+              <Input
+                id="location"
+                value={formData.location}
+                onChange={(e) => handleInputChange("location", e.target.value)}
+                placeholder="Your location"
+              />
+            </div>
           </div>
-
-          {/* Save Button */}
-          <Button 
-            onClick={saveProfile} 
-            disabled={saving}
-            className="w-full bg-purple-600 hover:bg-purple-700"
-          >
-            {saving ? "Saving..." : "Save Changes"}
-          </Button>
         </CardContent>
       </Card>
+
+      {/* Account Information */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Account Information</CardTitle>
+          <CardDescription>
+            Your account details and preferences
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+            <div className="flex items-center gap-3">
+              <Calendar className="h-5 w-5 text-muted-foreground" />
+              <div>
+                <p className="font-medium">Member since</p>
+                <p className="text-sm text-muted-foreground">
+                  {user?.created_at ? new Date(user.created_at).toLocaleDateString() : "Unknown"}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+            <div className="flex items-center gap-3">
+              <Mail className="h-5 w-5 text-muted-foreground" />
+              <div>
+                <p className="font-medium">Email</p>
+                <p className="text-sm text-muted-foreground">{user?.email}</p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Actions */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <Button onClick={saveProfile} disabled={saving} className="flex-1">
+          {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Save Changes
+        </Button>
+        <Button variant="outline" onClick={signOut} className="flex-1">
+          <LogOut className="mr-2 h-4 w-4" />
+          Sign Out
+        </Button>
+      </div>
     </div>
   );
 };

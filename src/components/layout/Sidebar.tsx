@@ -100,7 +100,7 @@ const NavItem = ({
 const Sidebar = () => {
   const location = useLocation();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const isMobile = useIsMobile();
   const [collapsed, setCollapsed] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -127,6 +127,7 @@ const Sidebar = () => {
   const navItems = [
     { id: "tasks", label: "Task List", icon: List, path: "/tasks", implemented: true },
     { id: "tests", label: "Tests", icon: ClipboardList, path: "/tests", implemented: true },
+    { id: "productivity", label: "Productivity", icon: Clock, path: "/productivity", implemented: true },
     { id: "team", label: "Team", icon: Users, path: "/team", implemented: true },
     { id: "notes", label: "Notes", icon: FileText, path: "/notes", implemented: true },
     { id: "timer", label: "Timer", icon: Timer, path: "/timer", implemented: true },
@@ -238,20 +239,33 @@ const Sidebar = () => {
       </div>
       
       {/* User Section */}
-      <div className="p-3 border-t border-dincharya-muted/20">
+      <div className="p-3 border-t border-dincharya-muted/20 space-y-2">
         {user ? (
-          <Link to="/profile">
+          <>
+            <Link to="/profile">
+              <Button 
+                variant="ghost" 
+                className={cn(
+                  "w-full flex items-center justify-start gap-2", 
+                  isCollapsedCalc && "px-0 justify-center"
+                )}
+              >
+                <User className="h-4 w-4" /> 
+                {!isCollapsedCalc && "My Profile"}
+              </Button>
+            </Link>
             <Button 
               variant="outline" 
+              onClick={signOut}
               className={cn(
-                "w-full flex items-center justify-center gap-2", 
-                isCollapsedCalc && "px-0"
+                "w-full flex items-center justify-start gap-2", 
+                isCollapsedCalc && "px-0 justify-center"
               )}
             >
               <User className="h-4 w-4" /> 
-              {!isCollapsedCalc && "My Profile"}
+              {!isCollapsedCalc && "Sign Out"}
             </Button>
-          </Link>
+          </>
         ) : (
           <Link to="/auth">
             <Button 

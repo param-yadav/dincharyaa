@@ -27,6 +27,7 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 import TestsPage from "./pages/TestsPage";
 import TestAnalysisPage from "@/components/tests/TestAnalysisPage";
 import EditTestPage from "@/components/tests/EditTestPage";
+import ProductivityPage from "./pages/ProductivityPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -108,6 +109,13 @@ function App() {
           <ProtectedRoute>
             <MainLayout>
               <AnalyticsPage />
+            </MainLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/productivity" element={
+          <ProtectedRoute>
+            <MainLayout>
+              <ProductivityPage />
             </MainLayout>
           </ProtectedRoute>
         } />

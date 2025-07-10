@@ -12,7 +12,7 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
   
   useEffect(() => {
     if (!loading && !user) {
-      navigate("/sign-in");
+      navigate("/auth");
     }
   }, [user, loading, navigate]);
 

@@ -46,7 +46,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      // Clean up existing state before signing in
+      localStorage.removeItem('supabase.auth.token');
+      Object.keys(localStorage).forEach((key) => {
+        if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+          localStorage.removeItem(key);
+        }
+      });
+      
+      // Attempt global sign out first
+      try {
+        await supabase.auth.signOut({ scope: 'global' });
+      } catch (err) {
+        // Continue even if this fails
+      }
+
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -58,7 +73,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         description: "Welcome back to Dincharya!",
       });
       
-      navigate("/tasks");
+      if (data.user) {
+        // Force page reload for clean state
+        window.location.href = "/tasks";
+      }
     } catch (error: any) {
       toast({
         title: "Sign in failed",
@@ -70,17 +88,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signUp = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signUp({
+      const redirectUrl = `${window.location.origin}/`;
+      
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: redirectUrl
+        }
       });
 
       if (error) throw error;
       
-      toast({
-        title: "Sign up successful",
-        description: "Please check your email for verification.",
-      });
+      if (data.user && !data.user.email_confirmed_at) {
+        toast({
+          title: "Sign up successful",
+          description: "Please check your email for verification.",
+        });
+      } else if (data.user) {
+        toast({
+          title: "Account created successfully",
+          description: "Welcome to Dincharya!",
+        });
+        navigate("/tasks");
+      }
     } catch (error: any) {
       toast({
         title: "Sign up failed",
@@ -92,17 +123,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     try {
-      await supabase.auth.signOut();
-      navigate("/auth");
+      // Clean up auth state
+      localStorage.removeItem('supabase.auth.token');
+      Object.keys(localStorage).forEach((key) => {
+        if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+          localStorage.removeItem(key);
+        }
+      });
+      
+      await supabase.auth.signOut({ scope: 'global' });
+      
       toast({
         title: "Signed out successfully",
       });
+      
+      // Force page reload for clean state
+      window.location.href = "/auth";
     } catch (error: any) {
       toast({
         title: "Sign out failed",
         description: error.message,
         variant: "destructive",
       });
+      // Force redirect even if sign out fails
+      window.location.href = "/auth";
     }
   };
 
